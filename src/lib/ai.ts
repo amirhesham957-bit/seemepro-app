@@ -1,17 +1,11 @@
-import Groq from 'groq-sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const groq = new Groq({
-  apiKey: import.meta.env.VITE_GROQ_API_KEY,
-  dangerouslyAllowBrowser: true, // For rapid prototyping
-});
+const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 export const analyzeToxicVoiceNote = async (transcript: string) => {
   try {
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content: `You are an expert relationship psychologist AI. Analyze the transcript for signs of emotional manipulation, gaslighting, and toxicity. 
+    const prompt = `You are an expert relationship psychologist AI. Analyze the transcript for signs of emotional manipulation, gaslighting, and toxicity. 
 Return ONLY a valid JSON object matching this exact structure:
 {
   "toxicity": number (0-100),
@@ -20,25 +14,15 @@ Return ONLY a valid JSON object matching this exact structure:
   "redFlags": ["specific flag 1", "specific flag 2"],
   "category": "healthy" | "warning" | "toxic" | "run",
   "summary": "Brief 2 sentence psychological summary"
-}`
-        },
-        {
-          role: "user",
-          content: `Transcript: "${transcript}"`
-        }
-      ],
-      model: "llama3-8b-8192", // Fast model for rapid response
-      temperature: 0.2,
-      response_format: { type: "json_object" }
-    });
+}
+Transcript: "${transcript}"`;
 
-    const responseContent = chatCompletion.choices[0]?.message?.content;
-    if (!responseContent) throw new Error("No response from AI");
-    
-    return JSON.parse(responseContent);
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
+    const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || [null, responseText];
+    return JSON.parse(jsonMatch[1]);
   } catch (error) {
     console.error("AI Analysis Failed:", error);
-    // Fallback to mock data if API fails or quota exceeded
     return {
       toxicity: 85,
       gaslighting: 70,
@@ -52,36 +36,58 @@ Return ONLY a valid JSON object matching this exact structure:
 
 export const analyzeVoiceTruthfulness = async (transcript: string) => {
   try {
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content: `You are an expert polygraph examiner and behavioral analyst. Analyze the transcript for signs of deception, stress, and underlying emotions.
+    const prompt = `You are an expert polygraph examiner and behavioral analyst. Analyze the transcript for signs of deception, stress, and underlying emotions.
 Return ONLY a valid JSON object matching this exact structure:
 {
-  "truthfulness": number (0-100, where 100 is completely truthful),
+  "truthfulness": number (0-100),
   "stressLevel": "Low" | "Medium" | "High" | "Critical",
   "emotions": { "happy": number, "sad": number, "neutral": number, "angry": number },
-  "summary": "Brief 2 sentence behavioral summary"
+  "summary": "Detailed 3-5 paragraph behavioral summary of the subject's voice analysis.",
+  "strengths": ["clear articulation", "steady pace"],
+  "areasToImprove": ["frequent filler words", "pitch elevation during difficult topics"],
+  "categoryScores": { "voiceClarity": number (0-100), "confidence": number (0-100), "pace": number (0-100), "fillerWordsScore": number (0-100) }
 }
-Ensure the emotion numbers add up to exactly 100.`
-        },
-        {
-          role: "user",
-          content: `Transcript: "${transcript}"`
-        }
-      ],
-      model: "llama3-8b-8192",
-      temperature: 0.2,
-      response_format: { type: "json_object" }
-    });
+Ensure the emotion numbers add up to exactly 100.
+Transcript: "${transcript}"`;
 
-    const responseContent = chatCompletion.choices[0]?.message?.content;
-    if (!responseContent) throw new Error("No response from AI");
-    
-    return JSON.parse(responseContent);
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
+    const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || [null, responseText];
+    return JSON.parse(jsonMatch[1]);
   } catch (error) {
-    console.error("AI Analysis Failed:", error);
+    console.error("AI Voice Analysis Failed:", error);
+    return null;
+  }
+};
+
+export const analyzeVideoTruthfulness = async (metadata: any) => {
+  try {
+    const prompt = `You are an expert body language and micro-expression analyst. I will provide you with JSON metadata extracted from a video session. 
+Analyze the metadata and return ONLY a valid JSON object matching this exact structure:
+{
+  "truthfulness": number (0-100),
+  "face": { 
+    "microExpressions": "string describing micro-expressions detected", 
+    "eyeMovement": "string describing eye movement patterns" 
+  },
+  "body": { 
+    "posture": "string describing body posture", 
+    "handMovements": "string describing hand movements/gestures" 
+  },
+  "inconsistencies": ["string detailing contradiction 1", "string detailing contradiction 2"],
+  "summary": "Detailed 3-5 paragraph behavioral summary of the subject.",
+  "strengths": ["good eye contact", "open posture"],
+  "areasToImprove": ["frequent touching of face", "closed off body language"],
+  "categoryScores": { "eyeContact": number (0-100), "posture": number (0-100), "confidence": number (0-100) }
+}
+Metadata: ${JSON.stringify(metadata)}`;
+
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
+    const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || [null, responseText];
+    return JSON.parse(jsonMatch[1]);
+  } catch (error) {
+    console.error("AI Video Analysis Failed:", error);
     return null;
   }
 };

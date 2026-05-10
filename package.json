@@ -10,6 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@mediapipe/camera_utils": "^0.3.1675466862",
+    "@mediapipe/face_mesh": "^0.4.1633559619",
+    "@react-spring/web": "^10.0.3",
     "@supabase/supabase-js": "^2.105.4",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
@@ -17,9 +21,11 @@
     "groq-sdk": "^1.1.2",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
+    "lottie-react": "^2.4.1",
     "lucide-react": "^1.14.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
+    "react-intersection-observer": "^10.0.3",
     "react-router-dom": "^7.15.0",
     "react-webcam": "^7.2.0",
     "tailwind-merge": "^3.5.0",
