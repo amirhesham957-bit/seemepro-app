@@ -25,14 +25,14 @@ export const LegalDisclaimerModal: React.FC = () => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="absolute inset-0 bg-black/80 backdrop-blur-md"
+          className="absolute inset-0 bg-black/80 backdrop-blur-md pointer-events-none"
         />
 
         {/* Modal */}
         <motion.div
           initial={{ scale: 0.95, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
-          className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-gray-900 border border-gray-800 shadow-2xl shadow-brand-primary/20"
+          className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-gray-900 border border-gray-800 shadow-2xl shadow-brand-primary/20 z-[101]"
         >
           {/* Header */}
           <div className="relative p-6 border-b border-gray-800 flex items-center gap-4 bg-gray-900/50">
