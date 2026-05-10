@@ -1,34 +1,27 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { useGamificationStore } from '../store/gamificationStore';
 
 export const LegalDisclaimerModal: React.FC = () => {
-  const { termsAccepted, acceptTerms, isInitialized } = useGamificationStore();
   const [isChecked, setIsChecked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
+  const [isVisible, setIsVisible] = useState(false);
 
-  // Don't show until initialized, and hide if already accepted
-  if (!isInitialized || termsAccepted) return null;
+  useEffect(() => {
+    const hasAccepted = localStorage.getItem('hasAcceptedDisclaimer');
+    if (!hasAccepted) {
+      setIsVisible(true);
+    }
+  }, []);
+
+  if (!isVisible) return null;
 
   const handleAccept = () => {
     if (!isChecked) return;
     setIsLoading(true);
-
-    // Persist acceptance synchronously via Zustand
-    acceptTerms();
-
-    // Primary: React Router navigation
-    try {
-      navigate('/');
-    } catch {
-      // Fallback: hard redirect if router context is unavailable
-      window.location.href = '/';
-    }
-
-    setIsLoading(false);
+    localStorage.setItem('hasAcceptedDisclaimer', 'true');
+    setIsVisible(false);
+    window.location.href = '/';
   };
 
   return (
@@ -97,10 +90,19 @@ export const LegalDisclaimerModal: React.FC = () => {
           <div className="relative p-6 pt-2 z-[10001]">
             <button
               type="button"
-              onClick={() => { console.log('Bypassing...'); window.location.href='/'; }}
-              className={`w-full py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all bg-brand-primary hover:bg-blue-600 text-white shadow-lg shadow-brand-primary/25 cursor-pointer`}
+              onClick={handleAccept}
+              disabled={!isChecked || isLoading}
+              className={`w-full py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
+                isChecked
+                  ? 'bg-brand-primary hover:bg-blue-600 text-white shadow-lg shadow-brand-primary/25 cursor-pointer'
+                  : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+              }`}
             >
-              I Agree & Continue
+              {isLoading ? (
+                <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                'I Agree & Continue'
+              )}
             </button>
           </div>
         </motion.div>
