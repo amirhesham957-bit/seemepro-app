@@ -1,10 +1,12 @@
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Activity, Mic, Video, HeartCrack, Trophy, LayoutDashboard } from 'lucide-react';
+import { Activity, Mic, Video, HeartCrack, LayoutDashboard, History, User } from 'lucide-react';
 import VoiceAnalysis from './pages/VoiceAnalysis';
 import ToxicMeter from './pages/ToxicMeter';
 import VideoAnalysis from './pages/VideoAnalysis';
 import LiveAnalysis from './pages/LiveAnalysis';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import HistoryPage from './pages/HistoryPage';
 import { useEffect } from 'react';
 import { LegalDisclaimerModal } from './components/LegalDisclaimerModal';
 import { ToastContainer } from './components/Toast';
@@ -128,6 +130,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             <span className="hidden md:block font-medium">Live Analysis</span>
             <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-brand-ai hidden md:block animate-pulse"></div>
           </Link>
+          <Link to="/history" className="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/10 transition-colors w-full text-brand-secondary hover:text-brand-text">
+            <History size={24} />
+            <span className="hidden md:block font-medium">History</span>
+          </Link>
         </div>
         
         <div className="mt-auto w-full flex flex-col space-y-4">
@@ -136,7 +142,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             className="glass-card p-4 flex flex-col items-center justify-center text-center relative overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-yellow-600/10"></div>
-            <Trophy className="text-yellow-400 mb-2 drop-shadow-[0_0_5px_rgba(250,204,21,0.5)]" size={28} />
+            <Star className="text-yellow-400 mb-2 drop-shadow-[0_0_5px_rgba(250,204,21,0.5)]" size={28} />
             <p className="text-sm font-semibold hidden md:block">{coins} Coins</p>
             <button className="mt-2 text-xs bg-brand-primary hover:bg-blue-600 px-3 py-1.5 rounded-lg w-full transition-colors hidden md:block shadow-lg">Get Premium</button>
           </motion.div>
@@ -169,6 +175,7 @@ const AnimatedRoutes = () => {
         <Route path="/video" element={<VideoAnalysis />} />
         <Route path="/toxic" element={<ToxicMeter />} />
         <Route path="/live" element={<LiveAnalysis />} />
+        <Route path="/history" element={<HistoryPage />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
       </Routes>
     </AnimatePresence>

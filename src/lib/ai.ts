@@ -91,3 +91,38 @@ Metadata: ${JSON.stringify(metadata)}`;
     return null;
   }
 };
+
+export const analyzeLiveInterview = async (videoMetadata: any, voiceMetadata: any) => {
+  try {
+    const prompt = `You are an expert interview coach and behavioral psychologist. I will provide you with both video and voice metadata from a live interview session. 
+Analyze both datasets and return ONLY a valid JSON object matching this exact structure:
+{
+  "overallScore": number (0-100),
+  "videoAnalysis": {
+     "eyeContact": number (0-100),
+     "posture": number (0-100),
+     "facialExpressions": "string describing facial expression consistency"
+  },
+  "voiceAnalysis": {
+     "confidence": number (0-100),
+     "pace": number (0-100),
+     "clarity": number (0-100),
+     "fillerWords": number (0-100)
+  },
+  "summary": "Detailed 3-5 paragraph analysis of the interview performance, combining both visual and vocal cues.",
+  "strengths": ["strength 1", "strength 2"],
+  "areasToImprove": ["improvement 1", "improvement 2"],
+  "coachingTips": ["tip 1", "tip 2", "tip 3"]
+}
+Video Metadata: ${JSON.stringify(videoMetadata)}
+Voice Metadata: ${JSON.stringify(voiceMetadata)}`;
+
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
+    const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || [null, responseText];
+    return JSON.parse(jsonMatch[1]);
+  } catch (error) {
+    console.error("AI Live Interview Analysis Failed:", error);
+    return null;
+  }
+};

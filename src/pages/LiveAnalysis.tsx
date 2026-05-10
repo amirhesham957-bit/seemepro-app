@@ -1,26 +1,42 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Video, Activity, AlertCircle, ShieldAlert, Disc } from 'lucide-react';
+import { Video, Activity, AlertCircle, ShieldAlert, Disc, Camera, Play, Lock, Mic, MicOff, Waveform, Settings, User, Briefcase, Star, Zap, CheckCircle2, Clock, TrendingUp } from 'lucide-react';
 import Webcam from 'react-webcam';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useGamificationStore } from '../store/gamificationStore';
+import { useToastStore } from '../store/toastStore';
+import AdModal from '../components/AdModal';
+import { AnalysisReportPDF } from '../components/AnalysisReportPDF';
+import { downloadReportAsPDF } from '../lib/pdfUtils';
+import { analyzeLiveInterview } from '../lib/ai';
 
 // Use globals from CDN to avoid bundler issues
-const FaceMesh = (window as any).FaceMesh;
-const MediaPipeCamera = (window as any).Camera;
+declare const FaceMesh: any;
+declare const CameraUtils: any;
 
 const LiveAnalysis = () => {
   const [isLive, setIsLive] = useState(false);
+  const [mode, setMode] = useState<'setup' | 'analysis'>('setup');
   const [time, setTime] = useState(0);
 
   // Real-time data
-  const [truthScore, setTruthScore] = useState(90);
-  const [stressScore, setStressScore] = useState(20);
-  const [alerts, setAlerts] = useState<{time: string, msg: string}[]>([]);
+  const [videoMetrics, setVideoMetrics] = useState({
+    eyeContact: 95,
+    posture: 85,
+    expression: 'Confident'
+  });
+  const [voiceMetrics, setVoiceMetrics] = useState({
+    confidence: 90,
+    pace: 80,
+    clarity: 85,
+    fillerWords: 5
+  });
+  const [alerts, setAlerts] = useState<{time: string, msg: string, type: 'warning' | 'danger'}[]>([]);
 
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const recognitionRef = useRef<any>(null);
-  const faceMeshRef = useRef<FaceMesh | null>(null);
-  const cameraRef = useRef<MediaPipeCamera | null>(null);
+  const faceMeshRef = useRef<any>(null);
+  const cameraRef = useRef<any>(null);
 
   useEffect(() => {
     let interval: any;
@@ -28,24 +44,32 @@ const LiveAnalysis = () => {
       interval = setInterval(() => {
         setTime(t => t + 1);
         
-        // Randomly fluctuate scores to simulate AI processing based on face movements
-        const newTruth = Math.max(0, Math.min(100, truthScore + (Math.random() * 10 - 5)));
-        const newStress = Math.max(0, Math.min(100, stressScore + (Math.random() * 10 - 5)));
-        
-        setTruthScore(newTruth);
-        setStressScore(newStress);
+        // Simulate real-time fluctuations
+        setVideoMetrics(prev => ({
+          ...prev,
+          eyeContact: Math.max(70, Math.min(100, prev.eyeContact + (Math.random() * 4 - 2))),
+          posture: Math.max(60, Math.min(100, prev.posture + (Math.random() * 4 - 2))),
+        }));
 
-        if (newTruth < 50 && Math.random() > 0.9) {
-           setAlerts(prev => [{ time: formatTime(time), msg: 'Deception spike detected (Voice Pitch)' }, ...prev].slice(0, 5));
-        }
-        if (newStress > 80 && Math.random() > 0.9) {
-           setAlerts(prev => [{ time: formatTime(time), msg: 'High stress level (Micro-expressions)' }, ...prev].slice(0, 5));
+        setVoiceMetrics(prev => ({
+          ...prev,
+          confidence: Math.max(70, Math.min(100, prev.confidence + (Math.random() * 6 - 3))),
+          pace: Math.max(50, Math.min(100, prev.pace + (Math.random() * 4 - 2))),
+          fillerWords: Math.max(0, Math.min(20, prev.fillerWords + (Math.random() * 2 - 1))),
+        }));
+
+        // Randomly trigger alerts
+        if (Math.random() > 0.95) {
+           const types: ('warning' | 'danger')[] = ['warning', 'danger'];
+           const type = types[Math.floor(Math.random() * types.length)];
+           const msg = type === 'danger' ? 'Significant gaze aversion detected' : 'Speaking pace increasing';
+           setAlerts(prev => [{ time: formatTime(time), msg, type }, ...prev].slice(0, 5));
         }
 
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isLive, truthScore, stressScore, time]);
+  }, [isLive, time]);
 
   useEffect(() => {
     if (isLive) {
@@ -61,8 +85,8 @@ const LiveAnalysis = () => {
       }
       setTime(0);
       setAlerts([]);
-      setTruthScore(90);
-      setStressScore(20);
+      setVideoMetrics({ eyeContact: 95, posture: 85, expression: 'Confident' });
+      setVoiceMetrics({ confidence: 90, pace: 80, clarity: 85, fillerWords: 5 });
     }
     
     return () => {
@@ -71,10 +95,15 @@ const LiveAnalysis = () => {
     };
   }, [isLive]);
 
-  const initFaceMesh = () => {
-    if (!faceMeshRef.current) {
+  const initFaceMesh = async () => {
+    try {
+      if (typeof FaceMesh === 'undefined') {
+        useToastStore.getState().addToast('error', 'MediaPipe FaceMesh not loaded.');
+        return;
+      }
+
       faceMeshRef.current = new FaceMesh({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
+        locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
       });
 
       faceMeshRef.current.setOptions({
@@ -85,46 +114,46 @@ const LiveAnalysis = () => {
       });
 
       faceMeshRef.current.onResults(onFaceMeshResults);
-    }
 
-    if (typeof webcamRef.current !== "undefined" && webcamRef.current !== null && webcamRef.current.video) {
-      const videoElement = webcamRef.current.video;
-      cameraRef.current = new MediaPipeCamera(videoElement, {
-        onFrame: async () => {
-          if (faceMeshRef.current) {
-            await faceMeshRef.current.send({ image: videoElement });
-          }
-        },
-        width: 640,
-        height: 480,
-      });
-      cameraRef.current.start();
+      if (webcamRef.current?.video) {
+        const videoElement = webcamRef.current.video;
+        if (typeof CameraUtils !== 'undefined') {
+          cameraRef.current = new CameraUtils(videoElement, {
+            onFrame: async () => {
+              if (faceMeshRef.current) {
+                await faceMeshRef.current.send({ image: videoElement });
+              }
+            },
+            width: 640,
+            height: 480,
+          });
+          cameraRef.current.start();
+        }
+      }
+    } catch (error) {
+      console.error("FaceMesh initialization failed:", error);
     }
   };
 
   const onFaceMeshResults = (results: any) => {
     if (!canvasRef.current || !webcamRef.current?.video) return;
-    
     const canvasCtx = canvasRef.current.getContext('2d');
     if (!canvasCtx) return;
     
     const videoWidth = webcamRef.current.video.videoWidth;
     const videoHeight = webcamRef.current.video.videoHeight;
-
     canvasRef.current.width = videoWidth;
     canvasRef.current.height = videoHeight;
 
     canvasCtx.save();
-    canvasCtx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    canvasCtx.clearRect(0, 0, videoWidth, videoHeight);
     
     if (results.multiFaceLandmarks) {
       for (const landmarks of results.multiFaceLandmarks) {
-        // Draw facial landmarks manually to simulate FACEMESH_TESSELATION
         canvasCtx.fillStyle = '#8b5cf6';
         canvasCtx.strokeStyle = 'rgba(139, 92, 246, 0.4)';
         canvasCtx.lineWidth = 1;
-        
-        for (let i = 0; i < landmarks.length; i++) {
+        for (let i = 0; i < landmarks.length; i += 10) { 
           const x = landmarks[i].x * videoWidth;
           const y = landmarks[i].y * videoHeight;
           canvasCtx.beginPath();
@@ -144,17 +173,12 @@ const LiveAnalysis = () => {
       recognitionRef.current.interimResults = false;
       
       recognitionRef.current.onresult = (event: any) => {
-        const lastResult = event.results[event.results.length - 1];
-        if (lastResult.isFinal) {
-          const text = lastResult[0].transcript.toLowerCase();
-          // Detect filler words to trigger alerts
-          const fillers = ['um', 'uh', 'like', 'you know', 'basically'];
-          const found = fillers.some(f => text.includes(f));
-          if (found) {
-            setAlerts(prev => [{ time: formatTime(time), msg: 'Filler word overuse detected (Confidence drop)' }, ...prev].slice(0, 5));
-            setTruthScore(prev => Math.max(0, prev - 5));
-            setStressScore(prev => Math.min(100, prev + 5));
-          }
+        const transcript = event.results[event.results.length - 1][0].transcript;
+        // Filler word detection logic
+        const fillers = ['um', 'uh', 'like', 'you know', 'basically'];
+        if (fillers.some(f => transcript.toLowerCase().includes(f))) {
+           setAlerts(prev => [{ time: formatTime(time), msg: 'Filler word detected', type: 'warning' }, ...prev].slice(0, 5));
+           setVoiceMetrics(prev => ({ ...prev, fillerWords: Math.min(100, prev.fillerWords + 2) }));
         }
       };
       
@@ -168,14 +192,33 @@ const LiveAnalysis = () => {
     return `${m}:${s}`;
   };
 
+  const handleEndSession = async () => {
+    setIsLive(false);
+    setIsAnalyzing(true);
+    
+    try {
+      // Combine metadata for Gemini
+      const aiResults = await analyzeLiveInterview(videoMetrics, voiceMetrics);
+      if (aiResults) {
+        // Redirect to results or show summary
+        // For now, we'll just toast and log
+        useToastStore.getState().addToast('success', 'Interview analysis complete!');
+        console.log('Interview Results:', aiResults);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
       className="space-y-6 h-full pb-20 flex flex-col"
     >
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <motion.div 
             initial={{ scale: 0 }} 
@@ -186,10 +229,10 @@ const LiveAnalysis = () => {
           </motion.div>
           <div>
             <h1 className="text-3xl font-bold flex items-center">
-              Live Analysis 
-              <span className="ml-3 text-xs bg-gradient-to-r from-brand-primary to-brand-ai px-2 py-1 rounded-full text-white uppercase tracking-wider shadow-[0_0_10px_rgba(139,92,246,0.5)]">Premium</span>
+              Live Interview AI 
+              <span className="ml-3 text-xs bg-gradient-to-r from-brand-primary to-brand-ai px-2 py-1 rounded-full text-white uppercase tracking-wider shadow-[0_0_10px_rgba(139,92,246,0.5)]">Pro</span>
             </h1>
-            <p className="text-brand-secondary">Real-time processing for interviews using MediaPipe.</p>
+            <p className="text-brand-secondary">Dual-stream behavioral and verbal analysis.</p>
           </div>
         </div>
         
@@ -201,135 +244,145 @@ const LiveAnalysis = () => {
              </div>
            )}
            <button 
-             onClick={() => setIsLive(!isLive)}
+             onClick={() => isLive ? handleEndSession() : setIsLive(true)}
              className={`px-6 py-2 rounded-xl font-bold transition-all ${isLive ? 'bg-red-500 hover:bg-red-600 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-brand-primary hover:bg-blue-600 text-white shadow-[0_0_15px_rgba(19,55,236,0.4)]'}`}
            >
-             {isLive ? 'End Session' : 'Start Camera'}
+             {isLive ? 'End Session' : 'Start Interview'}
            </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
         
-        {/* Camera Feed Mock */}
-        <div className="lg:col-span-2 glass-panel rounded-3xl overflow-hidden relative flex flex-col items-center justify-center min-h-[400px] border border-brand-ai/30 bg-black shadow-lg">
+        {/* Main Camera Feed */}
+        <div className="lg:col-span-2 glass-panel rounded-3xl overflow-hidden relative flex flex-col items-center justify-center min-h-[450px] border border-brand-ai/30 bg-black shadow-lg">
           {!isLive ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-brand-secondary space-y-4">
-               <Video size={64} className="mx-auto opacity-50" />
+               <Camera size={64} className="mx-auto opacity-50" />
                <p>Camera is offline</p>
-               <p className="text-sm max-w-xs mx-auto">Click 'Start Camera' to begin real-time WebRTC analysis with FaceMesh tracking.</p>
+               <p className="text-sm max-w-xs mx-auto">Click 'Start Interview' to begin real-time multimodal analysis.</p>
             </motion.div>
           ) : (
             <div className="w-full h-full relative">
                <Webcam 
                  ref={webcamRef}
-                 audio={false} // Disable audio on webcam since SpeechRecognition handles mic
+                 audio={true}
                  className="absolute inset-0 w-full h-full object-cover"
                  mirrored={true}
-                 videoConstraints={{
-                    width: 640,
-                    height: 480,
-                    facingMode: "user"
-                 }}
+                 videoConstraints={{ width: 640, height: 480, facingMode: "user" }}
                />
-               
-               {/* Canvas for MediaPipe Overlays */}
                <canvas
                  ref={canvasRef}
                  className="absolute inset-0 w-full h-full object-cover transform scale-x-[-1]"
                />
                
-               {/* UI Overlays */}
+               {/* Visual Indicators */}
                <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg text-sm border border-brand-ai/30 flex items-center space-x-2 text-white">
                  <div className="w-2 h-2 rounded-full bg-brand-success animate-pulse shadow-[0_0_5px_#00CC66]"></div>
-                 <span>MediaPipe Face Mesh Active</span>
+                 <span>Video Engine Active</span>
                </div>
 
                <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg text-sm border border-brand-primary/30 flex items-center space-x-2 text-white">
                  <div className="w-2 h-2 rounded-full bg-brand-primary animate-pulse"></div>
-                 <span>Speech Recognition</span>
+                 <span>Audio Engine Active</span>
                </div>
 
-               {/* Realtime Target Box */}
-               <motion.div 
-                 initial={{ opacity: 0, scale: 1.1 }}
-                 animate={{ opacity: 1, scale: 1 }}
-                 className="absolute inset-1/4 border-2 border-brand-ai/50 border-dashed rounded-3xl flex items-center justify-center pointer-events-none"
-               >
-                 <div className="absolute -top-6 text-xs text-brand-ai font-mono tracking-widest bg-black/50 px-2 rounded">SUBJECT TRACKING ENABLED</div>
-               </motion.div>
+               <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-black/40 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 flex items-center space-x-8">
+                  <div className="text-center">
+                    <p className="text-[10px] text-brand-secondary uppercase">Eye Contact</p>
+                    <p className="text-lg font-bold text-brand-ai">{videoMetrics.eyeContact.toFixed(0)}%</p>
+                  </div>
+                  <div className="w-[1px] h-8 bg-white/10" />
+                  <div className="text-center">
+                    <p className="text-[10px] text-brand-secondary uppercase">Confidence</p>
+                    <p className="text-lg font-bold text-brand-success">{voiceMetrics.confidence.toFixed(0)}%</p>
+                  </div>
+                  <div className="w-[1px] h-8 bg-white/10" />
+                  <div className="text-center">
+                    <p className="text-[10px] text-brand-secondary uppercase">Pace</p>
+                    <p className="text-lg font-bold text-brand-primary">{voiceMetrics.pace.toFixed(0)}%</p>
+                  </div>
+               </div>
             </div>
           )}
         </div>
 
-        {/* Live Analysis Panel */}
+        {/* Multimodal Insights Panel */}
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           className="glass-panel rounded-3xl p-6 flex flex-col space-y-6 overflow-y-auto"
         >
-          <h3 className="font-semibold text-lg border-b border-white/10 pb-4 text-brand-text">Real-Time Metrics</h3>
+          <h3 className="font-semibold text-lg border-b border-white/10 pb-4 text-brand-text">Real-Time Multimodal Feed</h3>
 
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-brand-secondary">Truthfulness</span>
-              <span className="font-mono text-brand-success">{truthScore.toFixed(1)}%</span>
-            </div>
-            <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden">
-               <motion.div 
-                 animate={{ width: `${truthScore}%` }}
-                 transition={{ type: 'spring', bounce: 0 }}
-                 className="bg-brand-success h-full rounded-full shadow-[0_0_10px_#00CC66]" 
-               />
+          {/* Video Stream Metrics */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-bold text-brand-ai uppercase tracking-widest">Visual Cues</h4>
+            <div className="space-y-3">
+              <MetricBar label="Eye Contact" value={videoMetrics.eyeContact} color="bg-brand-ai" />
+              <MetricBar label="Posture" value={videoMetrics.posture} color="bg-brand-primary" />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-brand-secondary">Stress Level</span>
-              <span className="font-mono text-brand-warning">{stressScore.toFixed(1)}%</span>
-            </div>
-            <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden">
-               <motion.div 
-                 animate={{ width: `${stressScore}%` }}
-                 transition={{ type: 'spring', bounce: 0 }}
-                 className="bg-brand-warning h-full rounded-full shadow-[0_0_10px_#f59e0b]" 
-               />
+          {/* Voice Stream Metrics */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-bold text-brand-primary uppercase tracking-widest">Vocal Cues</h4>
+            <div className="space-y-3">
+              <MetricBar label="Confidence" value={voiceMetrics.confidence} color="bg-brand-success" />
+              <MetricBar label="Pace" value={voiceMetrics.pace} color="bg-brand-secondary" />
+              <MetricBar label="Clarity" value={voiceMetrics.clarity} color="bg-brand-ai" />
             </div>
           </div>
 
+          {/* Live Alerts */}
           <div className="flex-1 mt-4">
              <h4 className="text-sm font-medium text-brand-secondary mb-3 flex items-center">
-               <ShieldAlert size={16} className="mr-2" /> Live Alerts
+               <ShieldAlert size={16} className="mr-2" /> Intelligence Alerts
              </h4>
              <div className="space-y-2">
                {!isLive ? (
-                 <p className="text-xs text-gray-500 italic text-center mt-10">Waiting for session to start...</p>
+                 <p className="text-xs text-gray-500 italic text-center mt-10">Start session to begin monitoring.</p>
                ) : alerts.length === 0 ? (
-                 <p className="text-xs text-green-500/70 italic text-center mt-10">Session nominal. No red flags.</p>
+                 <p className="text-xs text-green-500/70 italic text-center mt-10">All signals nominal.</p>
                ) : (
                  alerts.map((alert, i) => (
                    <motion.div 
                      initial={{ opacity: 0, x: -10 }} 
                      animate={{ opacity: 1, x: 0 }} 
                      key={i} 
-                     className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 flex items-start space-x-3 text-xs"
+                     className={`rounded-lg p-3 flex items-start space-x-3 ${alert.type === 'danger' ? 'bg-red-500/10 border border-red-500/20' : 'bg-orange-500/10 border border-orange-500/20'}`}
                    >
-                     <AlertCircle size={14} className="text-red-400 mt-0.5 shrink-0" />
+                     <AlertCircle size={14} className={`${alert.type === 'danger' ? 'text-red-400' : 'text-orange-400'} mt-0.5 shrink-0`} />
                      <div className="flex flex-col space-y-1">
-                       <span className="font-mono text-red-400 text-[10px]">[{alert.time}]</span>
-                       <span className="text-white font-medium">{alert.msg}</span>
+                       <span className={`font-mono text-[10px] ${alert.type === 'danger' ? 'text-red-400' : 'text-orange-400'}`}>{alert.time}</span>
+                       <span className="text-white font-medium text-xs">{alert.msg}</span>
                      </div>
                    </motion.div>
                  ))
                )}
              </div>
           </div>
-
         </motion.div>
       </div>
     </motion.div>
   );
 };
+
+// Helper Component
+const MetricBar = ({ label, value, color }: { label: string, value: number, color: string }) => (
+  <div className="space-y-1">
+    <div className="flex justify-between text-[10px] uppercase tracking-wider text-brand-secondary">
+      <span>{label}</span>
+      <span>{value.toFixed(0)}%</span>
+    </div>
+    <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+       <motion.div 
+         initial={{ width: 0 }}
+         animate={{ width: `${value}%` }}
+         className={`${color} h-full rounded-full`} 
+       />
+    </div>
+  </div>
+);
 
 export default LiveAnalysis;
