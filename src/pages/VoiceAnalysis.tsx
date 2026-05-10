@@ -3,6 +3,8 @@ import { UploadCloud, FileAudio, Play, AlertTriangle, CheckCircle, Activity, Loc
 import { useGamificationStore } from '../store/gamificationStore';
 import AdModal from '../components/AdModal';
 import WaveSurfer from 'wavesurfer.js';
+import { AnalysisReportPDF } from '../components/AnalysisReportPDF';
+import { downloadReportAsPDF } from '../lib/pdfUtils';
 
 const VoiceAnalysis = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -75,6 +77,7 @@ const VoiceAnalysis = () => {
             setResults({
               truthfulness: 45,
               stressLevel: 'High',
+              voicePitch: 'Slight elevation in fundamental frequency (F0) suggesting minor stress.',
               emotions: { happy: 5, sad: 15, neutral: 40, angry: 40 },
               summary: 'Deception indicators present. Voice pitch elevation and defensive language detected.'
             });
@@ -235,12 +238,20 @@ const VoiceAnalysis = () => {
                 <p className="text-lg leading-relaxed">{results.summary}</p>
                 <div className="mt-8 flex space-x-4">
                   <button onClick={() => {setResults(null); setFile(null);}} className="glass-button px-4 py-2 text-sm">Analyze Another</button>
-                  <button className="bg-brand-ai hover:bg-purple-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors">Download PDF</button>
+                  <button onClick={() => downloadReportAsPDF('voice-pdf-report', 'SeeMePro_Voice_Analysis')} className="bg-brand-ai hover:bg-purple-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors">Download PDF</button>
+                  <button onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({ title: 'SeeMe Pro Analysis', text: 'Check out my voice analysis results!', url: window.location.href }).catch(() => {});
+                    } else {
+                      alert('Sharing is not supported on this device.');
+                    }
+                  }} className="bg-[#1a1a2e] border border-brand-ai hover:bg-brand-ai/20 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors">Share</button>
                 </div>
              </div>
           </div>
         </div>
       )}
+      {results && <AnalysisReportPDF type="voice" results={results} id="voice-pdf-report" />}
 
       <AdModal 
         isOpen={showAdModal} 

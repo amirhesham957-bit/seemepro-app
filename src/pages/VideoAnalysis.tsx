@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { UploadCloud, FileVideo, Play, CheckCircle, Activity, Camera, Lock } from 'lucide-react';
 import { useGamificationStore } from '../store/gamificationStore';
 import AdModal from '../components/AdModal';
+import { AnalysisReportPDF } from '../components/AnalysisReportPDF';
+import { downloadReportAsPDF } from '../lib/pdfUtils';
 
 const VideoAnalysis = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -190,10 +192,18 @@ const VideoAnalysis = () => {
           
           <div className="flex justify-center mt-8 space-x-4">
              <button onClick={() => setResults(null)} className="glass-button px-6 py-2 text-sm">Analyze Another Video</button>
-             <button className="bg-brand-ai hover:bg-purple-600 text-white px-6 py-2 rounded-xl text-sm font-medium transition-colors">Download PDF Report</button>
+             <button onClick={() => downloadReportAsPDF('video-pdf-report', 'SeeMePro_Video_Analysis')} className="bg-brand-ai hover:bg-purple-600 text-white px-6 py-2 rounded-xl text-sm font-medium transition-colors">Download PDF Report</button>
+             <button onClick={() => {
+                if (navigator.share) {
+                  navigator.share({ title: 'SeeMe Pro Analysis', text: 'Check out my analysis results!', url: window.location.href }).catch(() => {});
+                } else {
+                  alert('Sharing is not supported on this device.');
+                }
+             }} className="bg-[#1a1a2e] border border-brand-ai hover:bg-brand-ai/20 text-white px-6 py-2 rounded-xl text-sm font-medium transition-colors">Share</button>
           </div>
         </div>
       )}
+      {results && <AnalysisReportPDF type="video" results={results} id="video-pdf-report" />}
       <AdModal 
         isOpen={showAdModal} 
         onClose={() => setShowAdModal(false)} 
