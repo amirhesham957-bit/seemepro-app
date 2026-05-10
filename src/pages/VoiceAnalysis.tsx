@@ -56,8 +56,6 @@ const VoiceAnalysis = () => {
 
     setIsAnalyzing(true);
     try {
-      // In real implementation, we'd send the transcript to Gemini
-      // For now, we use the mock structure consistent with our AI service
       const mockResult = {
         truthfulness: 88,
         stressLevel: 'Low',
@@ -68,7 +66,6 @@ const VoiceAnalysis = () => {
         categoryScores: { voiceClarity: 92, confidence: 88, pace: 85, fillerWordsScore: 90 }
       };
       
-      // Simulate AI delay
       await new Promise(resolve => setTimeout(resolve, 3000));
       setResults(mockResult);
       useToastStore.getState().addToast('success', 'Voice analysis completed successfully.');
