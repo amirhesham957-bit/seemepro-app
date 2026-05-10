@@ -1,5 +1,5 @@
-import { supabase } from '../lib/supabase';
-import { AnalysisReport } from '../types/global';
+﻿import { supabase } from '../lib/supabase';
+import type { AnalysisReport } from '../types/global';
 import { useReportStore } from '../store/reportStore';
 
 export const saveReportToSupabase = async (report: AnalysisReport) => {

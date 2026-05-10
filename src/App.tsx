@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Activity, Mic, Video, HeartCrack, LayoutDashboard, History, User } from 'lucide-react';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, NavLink } from 'react-router-dom';
+import { Activity, Mic, Video, HeartCrack, LayoutDashboard, History, Star } from 'lucide-react';
 import VoiceAnalysis from './pages/VoiceAnalysis';
 import ToxicMeter from './pages/ToxicMeter';
 import VideoAnalysis from './pages/VideoAnalysis';
@@ -11,6 +11,7 @@ import { LegalDisclaimerModal } from './components/LegalDisclaimerModal';
 import { ToastContainer } from './components/Toast';
 import { useGamificationStore } from './store/gamificationStore';
 import { motion, AnimatePresence } from 'framer-motion';
+import AnimatedBackground from './components/AnimatedBackground';
 
 // Home Component with Cinematic Animations
 const Home = () => (
@@ -87,15 +88,42 @@ const Home = () => (
   </motion.div>
 );
 
+// Nav link with active glow
+const NavItem = ({ to, icon, label, end = false, badge }: { to: string; icon: React.ReactNode; label: string; end?: boolean; badge?: React.ReactNode }) => (
+  <NavLink
+    to={to}
+    end={end}
+    className={({ isActive }) =>
+      `flex items-center space-x-3 p-3 rounded-xl transition-all w-full relative group ${
+        isActive
+          ? 'bg-brand-ai/15 text-white shadow-[0_0_12px_rgba(139,92,246,0.2)] border border-brand-ai/20'
+          : 'text-brand-secondary hover:text-white hover:bg-white/8'
+      }`
+    }
+  >
+    {({ isActive }) => (
+      <>
+        {isActive && <motion.div layoutId="nav-pill" className="absolute inset-0 rounded-xl bg-brand-ai/10" transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }} />}
+        <span className="relative z-10">{icon}</span>
+        <span className="hidden md:block font-medium relative z-10">{label}</span>
+        {badge && <span className="relative z-10 ml-auto">{badge}</span>}
+      </>
+    )}
+  </NavLink>
+);
+
 // Layout Wrapper
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const coins = useGamificationStore((state) => state.coins);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden">
+    <div className="flex h-screen w-full overflow-hidden relative">
+      {/* Particle Background */}
+      <AnimatedBackground />
+
       {/* Sidebar Navigation */}
-      <nav className="w-20 md:w-64 glass-panel h-full flex flex-col items-center md:items-start py-8 px-4 flex-shrink-0 z-10">
-        <motion.div 
+      <nav className="w-20 md:w-64 glass-panel h-full flex flex-col items-center md:items-start py-8 px-4 flex-shrink-0 z-10 relative">
+        <motion.div
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.5 }}
@@ -106,54 +134,40 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           </div>
           <span className="font-bold text-xl hidden md:block tracking-wide text-gradient">SeemePro</span>
         </motion.div>
-        
-        <div className="flex flex-col space-y-4 w-full">
-          <Link to="/" className="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/10 transition-colors w-full text-brand-text">
-            <LayoutDashboard size={24} />
-            <span className="hidden md:block font-medium">Dashboard</span>
-          </Link>
-          <Link to="/voice" className="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/10 transition-colors w-full text-brand-secondary hover:text-brand-text">
-            <Mic size={24} />
-            <span className="hidden md:block font-medium">Voice Analysis</span>
-          </Link>
-          <Link to="/video" className="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/10 transition-colors w-full text-brand-secondary hover:text-brand-text">
-            <Video size={24} />
-            <span className="hidden md:block font-medium">Video Analysis</span>
-          </Link>
-          <Link to="/toxic" className="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/10 transition-colors w-full text-brand-secondary hover:text-brand-text">
-            <HeartCrack size={24} />
-            <span className="hidden md:block font-medium">Toxic Meter</span>
-          </Link>
-          <Link to="/live" className="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/10 transition-colors w-full text-brand-secondary hover:text-brand-text relative">
-            <Activity size={24} />
-            <span className="hidden md:block font-medium">Live Analysis</span>
-            <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-brand-ai hidden md:block animate-pulse"></div>
-          </Link>
-          <Link to="/history" className="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/10 transition-colors w-full text-brand-secondary hover:text-brand-text">
-            <History size={24} />
-            <span className="hidden md:block font-medium">History</span>
-          </Link>
+
+        <div className="flex flex-col space-y-1 w-full">
+          <NavItem to="/" end icon={<LayoutDashboard size={22} />} label="Dashboard" />
+          <NavItem to="/voice" icon={<Mic size={22} />} label="Voice Analysis" />
+          <NavItem to="/video" icon={<Video size={22} />} label="Video Analysis" />
+          <NavItem to="/toxic" icon={<HeartCrack size={22} />} label="Toxic Meter" />
+          <NavItem
+            to="/live"
+            icon={<Activity size={22} />}
+            label="Live Analysis"
+            badge={<span className="w-2 h-2 rounded-full bg-brand-ai animate-pulse hidden md:block" />}
+          />
+          <NavItem to="/history" icon={<History size={22} />} label="History" />
         </div>
-        
+
         <div className="mt-auto w-full flex flex-col space-y-4">
-          <motion.div 
-            whileHover={{ scale: 1.05 }}
+          <motion.div
+            whileHover={{ scale: 1.04 }}
             className="glass-card p-4 flex flex-col items-center justify-center text-center relative overflow-hidden"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-yellow-600/10"></div>
-            <Star className="text-yellow-400 mb-2 drop-shadow-[0_0_5px_rgba(250,204,21,0.5)]" size={28} />
+            <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-yellow-600/10" />
+            <Star className="text-yellow-400 mb-2 drop-shadow-[0_0_5px_rgba(250,204,21,0.5)]" size={26} />
             <p className="text-sm font-semibold hidden md:block">{coins} Coins</p>
             <button className="mt-2 text-xs bg-brand-primary hover:bg-blue-600 px-3 py-1.5 rounded-lg w-full transition-colors hidden md:block shadow-lg">Get Premium</button>
           </motion.div>
-          
+
           <Link to="/privacy" className="text-xs text-brand-secondary hover:text-white transition-colors text-center pb-2 hidden md:block">
             Privacy Policy
           </Link>
         </div>
       </nav>
-      
+
       {/* Main Content Area */}
-      <main className="flex-1 h-full overflow-y-auto relative p-6 md:p-10">
+      <main className="flex-1 h-full overflow-y-auto relative z-10 p-6 md:p-10">
         <div className="max-w-6xl mx-auto h-full">
           {children}
         </div>

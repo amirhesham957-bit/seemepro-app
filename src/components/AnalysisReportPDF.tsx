@@ -1,197 +1,286 @@
-import React from 'react';
+﻿import React from 'react';
+
+interface CategoryScores {
+  [key: string]: number | undefined;
+}
+
+interface VideoFace {
+  microExpressions: string;
+  eyeMovement: string;
+}
+
+interface VideoBody {
+  posture: string;
+  handMovements: string;
+}
+
+interface EmotionMap {
+  [key: string]: number;
+}
+
+interface ReportResults {
+  // Shared
+  summary: string;
+  strengths?: string[];
+  areasToImprove?: string[];
+  categoryScores?: CategoryScores;
+  // Voice
+  truthfulness?: number;
+  stressLevel?: string;
+  emotions?: EmotionMap;
+  // Video
+  face?: VideoFace;
+  body?: VideoBody;
+  inconsistencies?: string[];
+  // Live
+  overallScore?: number;
+  videoAnalysis?: { eyeContact: number; posture: number; facialExpressions: string };
+  voiceAnalysis?: { confidence: number; pace: number; clarity: number; fillerWords: number };
+  coachingTips?: string[];
+}
 
 interface ReportProps {
-  type: 'video' | 'voice';
-  results: any;
+  type: 'video' | 'voice' | 'live';
+  results: ReportResults;
   id?: string;
 }
+
+const s = {
+  wrap: {
+    backgroundColor: '#FCFCFD',
+    color: '#1a1a2e',
+    width: '850px',
+    padding: '50px',
+    fontFamily: '"Inter", sans-serif',
+    position: 'absolute' as const,
+    top: '-9999px',
+    left: '-9999px',
+    zIndex: -1,
+  },
+  header: {
+    borderBottom: '2px solid #8b5cf6',
+    paddingBottom: '20px',
+    marginBottom: '30px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  title: { fontSize: '36px', margin: 0, fontWeight: 900, color: '#1337ec', letterSpacing: '-1px' },
+  subtitle: { margin: '5px 0 0 0', fontSize: '14px', color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '2px', fontWeight: 600 },
+  scoreBox: (borderColor: string) => ({
+    flex: 1,
+    backgroundColor: '#f9fafb',
+    borderRadius: '16px',
+    padding: '25px',
+    textAlign: 'center' as const,
+    borderTop: `4px solid ${borderColor}`,
+    boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+  }),
+  section: (bg: string) => ({ marginBottom: '25px', backgroundColor: bg, padding: '20px', borderRadius: '12px' }),
+  sectionTitle: (color: string) => ({ fontSize: '16px', color, marginTop: 0, marginBottom: '10px' }),
+  list: { margin: 0, paddingLeft: '20px', fontSize: '14px', lineHeight: '1.6' },
+};
+
+const CircularScore = ({ score, color }: { score: number; color: string }) => {
+  const r = 30;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (score / 100) * circ;
+  return (
+    <div style={{ position: 'relative', width: '80px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+      <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+        <circle cx="40" cy="40" r={r} stroke="#e5e7eb" strokeWidth="8" fill="transparent" />
+        <circle cx="40" cy="40" r={r} stroke={color} strokeWidth="8" fill="transparent" strokeDasharray={circ} strokeDashoffset={offset} />
+      </svg>
+      <div style={{ position: 'relative', fontWeight: 'bold', fontSize: '18px', color: '#1a1a2e' }}>{score}</div>
+    </div>
+  );
+};
+
+const BarRow = ({ label, value }: { label: string; value: number }) => (
+  <div style={{ marginBottom: '10px' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+      <span style={{ color: '#4b5563', textTransform: 'capitalize' }}>{label.replace(/([A-Z])/g, ' $1').trim()}</span>
+      <span style={{ fontWeight: 600, color: '#1337ec' }}>{value}%</span>
+    </div>
+    <div style={{ width: '100%', backgroundColor: '#e5e7eb', borderRadius: '4px', height: '6px' }}>
+      <div style={{ width: `${value}%`, backgroundColor: '#1337ec', height: '6px', borderRadius: '4px' }} />
+    </div>
+  </div>
+);
 
 export const AnalysisReportPDF: React.FC<ReportProps> = ({ type, results, id = 'pdf-report-content' }) => {
   if (!results) return null;
 
-  // Helper for circular progress
-  const renderCircularScore = (score: number, color: string) => {
-    const radius = 30;
-    const circumference = 2 * Math.PI * radius;
-    const strokeDashoffset = circumference - (score / 100) * circumference;
-    
-    return (
-      <div style={{ position: 'relative', width: '80px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
-        <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
-          <circle cx="40" cy="40" r={radius} stroke="#e5e7eb" strokeWidth="8" fill="transparent" />
-          <circle 
-            cx="40" cy="40" r={radius} 
-            stroke={color} 
-            strokeWidth="8" 
-            fill="transparent" 
-            strokeDasharray={circumference} 
-            strokeDashoffset={strokeDashoffset} 
-            style={{ transition: 'stroke-dashoffset 0.5s ease-in-out' }}
-          />
-        </svg>
-        <div style={{ position: 'relative', fontWeight: 'bold', fontSize: '18px', color: '#1a1a2e' }}>{score}</div>
-      </div>
-    );
-  };
+  const mainScore = type === 'live'
+    ? (results.overallScore ?? 0)
+    : (results.truthfulness ?? 0);
+
+  const reportLabel = type === 'video' ? 'Video Behavioral Analysis'
+    : type === 'voice' ? 'Voice & Speech Analysis'
+    : 'Live Interview Analysis';
 
   return (
-    <div 
-      id={id} 
-      style={{
-        backgroundColor: '#FCFCFD',
-        color: '#1a1a2e',
-        width: '850px',
-        padding: '50px',
-        fontFamily: '"Inter", sans-serif',
-        position: 'absolute',
-        top: '-9999px',
-        left: '-9999px',
-        zIndex: -1,
-      }}
-    >
+    <div id={id} style={s.wrap}>
       {/* Header */}
-      <div style={{ borderBottom: '2px solid #8b5cf6', paddingBottom: '20px', marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      <div style={s.header}>
         <div>
-          <h1 style={{ fontSize: '36px', margin: 0, fontWeight: 900, color: '#1337ec', letterSpacing: '-1px' }}>SeeMe Pro</h1>
-          <p style={{ margin: '5px 0 0 0', fontSize: '14px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Gemini AI Behavioral Analysis Report</p>
+          <h1 style={s.title}>SeeMe Pro</h1>
+          <p style={s.subtitle}>Gemini AI — {reportLabel} Report</p>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <p style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#4b5563' }}>Date: {new Date().toLocaleDateString()}</p>
-          <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#9ca3af', fontFamily: 'monospace' }}>ID: {Math.random().toString(36).substring(2, 10).toUpperCase()}</p>
+          <p style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#4b5563' }}>
+            {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+          </p>
+          <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#9ca3af', fontFamily: 'monospace' }}>
+            ID: {Math.random().toString(36).substring(2, 10).toUpperCase()}
+          </p>
         </div>
       </div>
 
-      {/* Main Score Dashboard */}
+      {/* Main Score Row */}
       <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
-        <div style={{ flex: 1, backgroundColor: '#f9fafb', borderRadius: '16px', padding: '25px', textAlign: 'center', borderTop: '4px solid #1337ec', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
-          <h3 style={{ margin: '0 0 15px 0', fontSize: '18px', color: '#4b5563', fontWeight: 600 }}>Overall Truthfulness Score</h3>
-          {renderCircularScore(results.truthfulness, '#1337ec')}
+        <div style={s.scoreBox('#1337ec')}>
+          <h3 style={{ margin: '0 0 15px 0', fontSize: '16px', color: '#4b5563', fontWeight: 600 }}>
+            {type === 'live' ? 'Overall Performance' : 'Behavioral Integrity'}
+          </h3>
+          <CircularScore score={mainScore} color="#1337ec" />
         </div>
-        
+
         {type === 'voice' && results.stressLevel && (
-          <div style={{ flex: 1, backgroundColor: '#f9fafb', borderRadius: '16px', padding: '25px', textAlign: 'center', borderTop: '4px solid #00CC66', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
-            <h3 style={{ margin: '0 0 15px 0', fontSize: '18px', color: '#4b5563', fontWeight: 600 }}>Detected Stress Level</h3>
-            <div style={{ fontSize: '42px', fontWeight: 800, color: '#00CC66', lineHeight: '80px' }}>{results.stressLevel}</div>
+          <div style={s.scoreBox('#00CC66')}>
+            <h3 style={{ margin: '0 0 15px 0', fontSize: '16px', color: '#4b5563', fontWeight: 600 }}>Stress Level</h3>
+            <div style={{ fontSize: '38px', fontWeight: 800, color: '#00CC66', lineHeight: '80px' }}>{results.stressLevel}</div>
+          </div>
+        )}
+
+        {type === 'live' && results.videoAnalysis && (
+          <div style={s.scoreBox('#8b5cf6')}>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#4b5563', fontWeight: 600 }}>Video · Voice Scores</h3>
+            <div style={{ fontSize: '12px', color: '#4b5563', lineHeight: '2' }}>
+              Eye Contact: <strong>{results.videoAnalysis.eyeContact}%</strong><br />
+              Posture: <strong>{results.videoAnalysis.posture}%</strong><br />
+              Confidence: <strong>{results.voiceAnalysis?.confidence}%</strong><br />
+              Pace: <strong>{results.voiceAnalysis?.pace}%</strong>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Strengths & Areas to Improve */}
-      {results.strengths && results.areasToImprove && (
-        <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
-          <div style={{ flex: 1, padding: '20px', backgroundColor: '#ecfdf5', borderRadius: '12px', borderLeft: '4px solid #10b981' }}>
-            <h3 style={{ fontSize: '16px', color: '#047857', marginTop: 0, marginBottom: '10px' }}>Key Strengths</h3>
-            <ul style={{ margin: 0, paddingLeft: '20px', color: '#065f46', fontSize: '14px', lineHeight: '1.6' }}>
-              {results.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
-            </ul>
-          </div>
-          <div style={{ flex: 1, padding: '20px', backgroundColor: '#fff1f2', borderRadius: '12px', borderLeft: '4px solid #e11d48' }}>
-            <h3 style={{ fontSize: '16px', color: '#be123c', marginTop: 0, marginBottom: '10px' }}>Areas to Improve</h3>
-            <ul style={{ margin: 0, paddingLeft: '20px', color: '#9f1239', fontSize: '14px', lineHeight: '1.6' }}>
-              {results.areasToImprove.map((a: string, i: number) => <li key={i}>{a}</li>)}
-            </ul>
-          </div>
+      {/* Summary */}
+      <div style={{ ...s.section('#fff'), border: '1px solid #e5e7eb', marginBottom: '25px' }}>
+        <h2 style={{ fontSize: '18px', color: '#1f2937', marginTop: 0, marginBottom: '12px' }}>Detailed Behavioral Summary</h2>
+        <p style={{ fontSize: '14px', lineHeight: '1.8', color: '#4b5563', margin: 0 }}>{results.summary}</p>
+      </div>
+
+      {/* Strengths + Areas */}
+      {(results.strengths?.length || results.areasToImprove?.length) && (
+        <div style={{ display: 'flex', gap: '20px', marginBottom: '25px' }}>
+          {results.strengths?.length && (
+            <div style={{ flex: 1, padding: '18px', backgroundColor: '#ecfdf5', borderRadius: '12px', borderLeft: '4px solid #10b981' }}>
+              <h3 style={s.sectionTitle('#047857')}>Key Strengths</h3>
+              <ul style={{ ...s.list, color: '#065f46' }}>
+                {results.strengths.map((str, i) => <li key={i}>{str}</li>)}
+              </ul>
+            </div>
+          )}
+          {results.areasToImprove?.length && (
+            <div style={{ flex: 1, padding: '18px', backgroundColor: '#fff1f2', borderRadius: '12px', borderLeft: '4px solid #e11d48' }}>
+              <h3 style={s.sectionTitle('#be123c')}>Areas to Improve</h3>
+              <ul style={{ ...s.list, color: '#9f1239' }}>
+                {results.areasToImprove.map((a, i) => <li key={i}>{a}</li>)}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 
       {/* Category Scores */}
-      {results.categoryScores && (
-        <div style={{ marginBottom: '30px', backgroundColor: '#f9fafb', padding: '20px', borderRadius: '12px' }}>
-          <h3 style={{ fontSize: '18px', color: '#374151', marginTop: 0, marginBottom: '15px' }}>Category Breakdown</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
-            {Object.entries(results.categoryScores).map(([category, score]) => (
-              <div key={category} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e5e7eb', paddingBottom: '8px' }}>
-                <span style={{ color: '#4b5563', textTransform: 'capitalize' }}>{category.replace(/([A-Z])/g, ' $1').trim()}</span>
-                <span style={{ fontWeight: 600, color: '#1337ec' }}>{score as number}%</span>
+      {results.categoryScores && Object.keys(results.categoryScores).length > 0 && (
+        <div style={{ ...s.section('#f9fafb'), marginBottom: '25px' }}>
+          <h3 style={{ fontSize: '16px', color: '#374151', marginTop: 0, marginBottom: '15px' }}>Category Breakdown</h3>
+          <div style={{ columns: 2, columnGap: '30px' }}>
+            {(Object.entries(results.categoryScores) as [string, number | undefined][]).map(([k, v]) =>
+              v !== undefined ? <BarRow key={k} label={k} value={v} /> : null
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Video-specific */}
+      {type === 'video' && (results.face || results.body) && (
+        <div style={{ display: 'flex', gap: '20px', marginBottom: '25px' }}>
+          {results.face && (
+            <div style={{ flex: 1, ...s.section('#f4f6ff') }}>
+              <h3 style={s.sectionTitle('#1337ec')}>Facial Expressions</h3>
+              <ul style={{ ...s.list, color: '#4b5563' }}>
+                <li style={{ marginBottom: '6px' }}><strong>Micro-expressions:</strong> {results.face.microExpressions}</li>
+                <li><strong>Eye Tracking:</strong> {results.face.eyeMovement}</li>
+              </ul>
+            </div>
+          )}
+          {results.body && (
+            <div style={{ flex: 1, ...s.section('#fdf4ff') }}>
+              <h3 style={s.sectionTitle('#8b5cf6')}>Body Language</h3>
+              <ul style={{ ...s.list, color: '#4b5563' }}>
+                <li style={{ marginBottom: '6px' }}><strong>Posture:</strong> {results.body.posture}</li>
+                <li><strong>Gestures:</strong> {results.body.handMovements}</li>
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Video inconsistencies */}
+      {type === 'video' && results.inconsistencies && results.inconsistencies.length > 0 && (
+        <div style={{ ...s.section('#fffbeb'), borderLeft: '4px solid #f59e0b', marginBottom: '25px' }}>
+          <h3 style={s.sectionTitle('#b45309')}>Critical Inconsistencies Detected</h3>
+          <ul style={{ ...s.list, color: '#92400e' }}>
+            {results.inconsistencies.map((inc, i) => <li key={i} style={{ marginBottom: '4px' }}>{inc}</li>)}
+          </ul>
+        </div>
+      )}
+
+      {/* Voice emotions */}
+      {type === 'voice' && results.emotions && (
+        <div style={{ ...s.section('#f4f6ff'), marginBottom: '25px' }}>
+          <h3 style={s.sectionTitle('#1337ec')}>Emotion Breakdown</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+            {Object.entries(results.emotions).map(([emo, val]) => (
+              <div key={emo} style={{ textAlign: 'center', padding: '10px', backgroundColor: '#e0e7ff', borderRadius: '8px' }}>
+                <div style={{ fontWeight: 700, fontSize: '20px', color: '#1337ec' }}>{val}%</div>
+                <div style={{ fontSize: '11px', color: '#4b5563', textTransform: 'capitalize', marginTop: '2px' }}>{emo}</div>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Summary */}
-      <div style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px' }}>
-        <h2 style={{ fontSize: '18px', color: '#1f2937', marginTop: 0, marginBottom: '15px' }}>Detailed Behavioral Summary</h2>
-        <p style={{ fontSize: '15px', lineHeight: '1.8', color: '#4b5563', margin: 0 }}>{results.summary}</p>
-      </div>
-
-      {/* Detailed Metrics */}
-      <div style={{ display: 'flex', gap: '20px', marginBottom: '30px', flexWrap: 'wrap' }}>
-        {type === 'video' && results.face && (
-          <div style={{ flex: 1, minWidth: '350px', backgroundColor: '#f4f6ff', padding: '20px', borderRadius: '12px' }}>
-            <h3 style={{ fontSize: '16px', color: '#1337ec', marginTop: 0, marginBottom: '10px' }}>Facial Expressions</h3>
-            <ul style={{ paddingLeft: '20px', margin: 0, color: '#4b5563', lineHeight: '1.6', fontSize: '14px' }}>
-              <li style={{ marginBottom: '8px' }}><strong>Micro-expressions:</strong> {results.face.microExpressions}</li>
-              <li><strong>Eye Tracking:</strong> {results.face.eyeMovement}</li>
-            </ul>
-          </div>
-        )}
-        
-        {type === 'video' && results.body && (
-          <div style={{ flex: 1, minWidth: '350px', backgroundColor: '#fdf4ff', padding: '20px', borderRadius: '12px' }}>
-            <h3 style={{ fontSize: '16px', color: '#8b5cf6', marginTop: 0, marginBottom: '10px' }}>Body Language</h3>
-            <ul style={{ paddingLeft: '20px', margin: 0, color: '#4b5563', lineHeight: '1.6', fontSize: '14px' }}>
-              <li style={{ marginBottom: '8px' }}><strong>Posture:</strong> {results.body.posture}</li>
-              <li><strong>Gestures:</strong> {results.body.handMovements}</li>
-            </ul>
-          </div>
-        )}
-        
-        {type === 'voice' && results.emotions && (
-          <div style={{ flex: 1, minWidth: '350px', backgroundColor: '#f4f6ff', padding: '20px', borderRadius: '12px' }}>
-            <h3 style={{ fontSize: '16px', color: '#1337ec', marginTop: 0, marginBottom: '10px' }}>Emotion Breakdown</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-              {Object.entries(results.emotions).map(([emo, val]) => (
-                <div key={emo} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <strong style={{ textTransform: 'capitalize', color: '#4b5563' }}>{emo}:</strong> 
-                  <span style={{ color: '#111827' }}>{val as number}%</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {type === 'video' && results.inconsistencies && results.inconsistencies.length > 0 && (
-        <div style={{ marginBottom: '40px', backgroundColor: '#fffbeb', padding: '20px', borderRadius: '12px', borderLeft: '4px solid #f59e0b' }}>
-          <h3 style={{ fontSize: '16px', color: '#b45309', margin: '0 0 10px 0' }}>Critical Inconsistencies Detected</h3>
-          <ul style={{ paddingLeft: '20px', margin: 0, color: '#92400e', lineHeight: '1.6', fontSize: '14px' }}>
-            {results.inconsistencies.map((inc: string, idx: number) => <li key={idx} style={{ marginBottom: '4px' }}>{inc}</li>)}
-          </ul>
+      {/* Live coaching tips */}
+      {type === 'live' && results.coachingTips && results.coachingTips.length > 0 && (
+        <div style={{ ...s.section('#f0fdf4'), borderLeft: '4px solid #22c55e', marginBottom: '25px' }}>
+          <h3 style={s.sectionTitle('#15803d')}>Coaching Tips</h3>
+          <ol style={{ ...s.list, color: '#166534' }}>
+            {results.coachingTips.map((tip, i) => <li key={i} style={{ marginBottom: '6px' }}>{tip}</li>)}
+          </ol>
         </div>
       )}
 
-      {/* Digital Security Stamp */}
-      <div style={{ 
-        marginTop: '50px', 
-        paddingTop: '20px', 
-        borderTop: '2px dashed #e5e7eb', 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        flexDirection: 'column'
-      }}>
-        <div style={{ 
-          width: '80px', 
-          height: '80px', 
-          borderRadius: '50%', 
-          border: '3px solid #00CC66', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          color: '#00CC66',
-          fontWeight: 'bold',
-          fontSize: '10px',
-          textAlign: 'center',
-          transform: 'rotate(-15deg)',
-          marginBottom: '10px',
-          boxShadow: '0 0 10px rgba(0,204,102,0.2)'
-        }}>
-          VERIFIED<br/>ANALYSIS<br/>SEAL
+      {/* Live: facial expression note */}
+      {type === 'live' && results.videoAnalysis?.facialExpressions && (
+        <div style={{ ...s.section('#fdf4ff'), marginBottom: '25px' }}>
+          <h3 style={s.sectionTitle('#8b5cf6')}>Facial Expression Analysis</h3>
+          <p style={{ fontSize: '14px', color: '#4b5563', margin: 0 }}>{results.videoAnalysis.facialExpressions}</p>
         </div>
-        <p style={{ fontSize: '11px', color: '#9ca3af', margin: 0, textAlign: 'center', lineHeight: '1.5' }}>
-          This document was securely generated by the SeeMe Pro AI Pipeline (Gemini Model).<br/>
-          Authenticity verified via cryptographic hash.
+      )}
+
+      {/* Seal */}
+      <div style={{ marginTop: '50px', paddingTop: '20px', borderTop: '2px dashed #e5e7eb', display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
+        <div style={{ width: '76px', height: '76px', borderRadius: '50%', border: '3px solid #00CC66', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00CC66', fontWeight: 'bold', fontSize: '9px', textAlign: 'center', transform: 'rotate(-15deg)', marginBottom: '10px' }}>
+          VERIFIED<br />ANALYSIS<br />SEAL
+        </div>
+        <p style={{ fontSize: '11px', color: '#9ca3af', margin: 0, textAlign: 'center', lineHeight: '1.6' }}>
+          This document was securely generated by the SeeMe Pro AI Pipeline (Gemini Model).<br />
+          Report type: <strong>{type.toUpperCase()}</strong> · Authenticity verified.
         </p>
       </div>
     </div>

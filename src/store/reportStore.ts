@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { AnalysisReport } from '../types/global';
+﻿import { create } from 'zustand';
+import type { AnalysisReport } from '../types/global';
 
 interface ReportState {
   reports: AnalysisReport[];

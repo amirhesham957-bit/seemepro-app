@@ -1,11 +1,11 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
 
 export const analyzeToxicVoiceNote = async (transcript: string) => {
   try {
-    const prompt = `You are an expert relationship psychologist AI. Analyze the transcript for signs of emotional manipulation, gaslighting, and toxicity. 
+    const prompt = `You are an expert relationship psychologist AI. Analyze the following transcript for signs of emotional manipulation, gaslighting, and toxicity.
 Return ONLY a valid JSON object matching this exact structure:
 {
   "toxicity": number (0-100),
@@ -20,29 +20,22 @@ Transcript: "${transcript}"`;
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
     const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || [null, responseText];
-    return JSON.parse(jsonMatch[1]);
+    return JSON.parse(jsonMatch[1] || jsonMatch[0]);
   } catch (error) {
     console.error("AI Analysis Failed:", error);
-    return {
-      toxicity: 85,
-      gaslighting: 70,
-      manipulation: 90,
-      redFlags: ["API Quota Exceeded/Failed - Using Mock Data", "Aggressive tone detected"],
-      category: "toxic",
-      summary: "High levels of manipulation detected. Please ensure your API keys have sufficient quota."
-    };
+    throw new Error("Failed to analyze voice note.");
   }
 };
 
 export const analyzeVoiceTruthfulness = async (transcript: string) => {
   try {
-    const prompt = `You are an expert polygraph examiner and behavioral analyst. Analyze the transcript for signs of deception, stress, and underlying emotions.
+    const prompt = `You are an expert polygraph examiner and behavioral analyst. Analyze the following transcript for signs of deception, stress, clarity, and underlying emotions.
 Return ONLY a valid JSON object matching this exact structure:
 {
   "truthfulness": number (0-100),
   "stressLevel": "Low" | "Medium" | "High" | "Critical",
   "emotions": { "happy": number, "sad": number, "neutral": number, "angry": number },
-  "summary": "Detailed 3-5 paragraph behavioral summary of the subject's voice analysis.",
+  "summary": "Detailed 3-5 paragraph behavioral summary of the subject's speech.",
   "strengths": ["clear articulation", "steady pace"],
   "areasToImprove": ["frequent filler words", "pitch elevation during difficult topics"],
   "categoryScores": { "voiceClarity": number (0-100), "confidence": number (0-100), "pace": number (0-100), "fillerWordsScore": number (0-100) }
@@ -53,16 +46,16 @@ Transcript: "${transcript}"`;
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
     const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || [null, responseText];
-    return JSON.parse(jsonMatch[1]);
+    return JSON.parse(jsonMatch[1] || jsonMatch[0]);
   } catch (error) {
     console.error("AI Voice Analysis Failed:", error);
-    return null;
+    throw new Error("Failed to analyze voice truthfulness.");
   }
 };
 
-export const analyzeVideoTruthfulness = async (metadata: any) => {
+export const analyzeVideoTruthfulness = async (metadata: any, framesBase64?: string[]) => {
   try {
-    const prompt = `You are an expert body language and micro-expression analyst. I will provide you with JSON metadata extracted from a video session. 
+    let prompt = `You are an expert body language and micro-expression analyst. I will provide you with JSON metadata extracted from a video session.
 Analyze the metadata and return ONLY a valid JSON object matching this exact structure:
 {
   "truthfulness": number (0-100),
@@ -82,20 +75,36 @@ Analyze the metadata and return ONLY a valid JSON object matching this exact str
 }
 Metadata: ${JSON.stringify(metadata)}`;
 
-    const result = await model.generateContent(prompt);
+    const contents: any[] = [prompt];
+    
+    if (framesBase64 && framesBase64.length > 0) {
+      prompt += `\nI have also attached ${framesBase64.length} image frames from the video. Please factor visual analysis of these frames into your assessment.`;
+      contents[0] = prompt;
+      
+      framesBase64.forEach(base64 => {
+        contents.push({
+          inlineData: {
+            data: base64.replace(/^data:image\/[a-z]+;base64,/, ""),
+            mimeType: "image/jpeg"
+          }
+        });
+      });
+    }
+
+    const result = await model.generateContent(contents);
     const responseText = result.response.text();
     const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || [null, responseText];
-    return JSON.parse(jsonMatch[1]);
+    return JSON.parse(jsonMatch[1] || jsonMatch[0]);
   } catch (error) {
     console.error("AI Video Analysis Failed:", error);
-    return null;
+    throw new Error("Failed to analyze video.");
   }
 };
 
-export const analyzeLiveInterview = async (videoMetadata: any, voiceMetadata: any) => {
+export const analyzeLiveInterview = async (videoMetadata: any, voiceMetadata: any, transcript: string) => {
   try {
-    const prompt = `You are an expert interview coach and behavioral psychologist. I will provide you with both video and voice metadata from a live interview session. 
-Analyze both datasets and return ONLY a valid JSON object matching this exact structure:
+    const prompt = `You are an expert interview coach and behavioral psychologist. I will provide you with video metadata, voice metadata, and a live transcript from an interview session. 
+Analyze all data streams and return ONLY a valid JSON object matching this exact structure:
 {
   "overallScore": number (0-100),
   "videoAnalysis": {
@@ -115,14 +124,15 @@ Analyze both datasets and return ONLY a valid JSON object matching this exact st
   "coachingTips": ["tip 1", "tip 2", "tip 3"]
 }
 Video Metadata: ${JSON.stringify(videoMetadata)}
-Voice Metadata: ${JSON.stringify(voiceMetadata)}`;
+Voice Metadata: ${JSON.stringify(voiceMetadata)}
+Transcript: "${transcript}"`;
 
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
     const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || [null, responseText];
-    return JSON.parse(jsonMatch[1]);
+    return JSON.parse(jsonMatch[1] || jsonMatch[0]);
   } catch (error) {
     console.error("AI Live Interview Analysis Failed:", error);
-    return null;
+    throw new Error("Failed to analyze live interview.");
   }
 };
