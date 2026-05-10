@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useGamificationStore } from '../store/gamificationStore';
@@ -7,32 +8,45 @@ export const LegalDisclaimerModal: React.FC = () => {
   const { termsAccepted, acceptTerms, isInitialized } = useGamificationStore();
   const [isChecked, setIsChecked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   // Don't show until initialized, and hide if already accepted
   if (!isInitialized || termsAccepted) return null;
 
-  const handleAccept = async () => {
+  const handleAccept = () => {
     if (!isChecked) return;
     setIsLoading(true);
-    await acceptTerms();
+
+    // Persist acceptance synchronously via Zustand
+    acceptTerms();
+
+    // Primary: React Router navigation
+    try {
+      navigate('/');
+    } catch {
+      // Fallback: hard redirect if router context is unavailable
+      window.location.href = '/';
+    }
+
     setIsLoading(false);
   };
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-        {/* Backdrop */}
+      {/* Full-screen overlay — z-[9999] beats everything */}
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+        {/* Backdrop — pointer-events-none so it never blocks the button */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="absolute inset-0 bg-black/80 backdrop-blur-md pointer-events-none"
         />
 
-        {/* Modal */}
+        {/* Modal card — z-[10000] so it sits above the backdrop */}
         <motion.div
           initial={{ scale: 0.95, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
-          className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-gray-900 border border-gray-800 shadow-2xl shadow-brand-primary/20 z-[101]"
+          className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-gray-900 border border-gray-800 shadow-2xl shadow-brand-primary/20 z-[10000]"
         >
           {/* Header */}
           <div className="relative p-6 border-b border-gray-800 flex items-center gap-4 bg-gray-900/50">
@@ -51,9 +65,12 @@ export const LegalDisclaimerModal: React.FC = () => {
               <AlertTriangle className="h-5 w-5 text-orange-500 shrink-0 mt-0.5" />
               <div className="text-sm text-orange-200/80 leading-relaxed">
                 <strong className="text-orange-400 block mb-1">Entertainment Purpose Only</strong>
-                This application uses Artificial Intelligence to analyze behavior, voice, and facial expressions. The results provided are for entertainment and self-reflection purposes only. 
+                This application uses Artificial Intelligence to analyze behavior, voice, and facial
+                expressions. The results provided are for entertainment and self-reflection purposes only.
                 <br /><br />
-                The analysis is <strong>not scientifically proven</strong> and should not be used for legal, medical, psychological, or critical decision-making. We do not assume any responsibility or liability for actions taken based on these results.
+                The analysis is <strong>not scientifically proven</strong> and should not be used for
+                legal, medical, psychological, or critical decision-making. We do not assume any
+                responsibility or liability for actions taken based on these results.
               </div>
             </div>
 
@@ -70,19 +87,21 @@ export const LegalDisclaimerModal: React.FC = () => {
                 </div>
               </div>
               <span className="text-sm text-gray-300">
-                I have read and agree to the terms. I understand this app is for entertainment only and I will not use the results for critical decisions.
+                I have read and agree to the terms. I understand this app is for entertainment only
+                and I will not use the results for critical decisions.
               </span>
             </label>
           </div>
 
-          {/* Footer */}
-          <div className="p-6 pt-2">
+          {/* Footer — explicit z-[10001] to be absolutely un-blockable */}
+          <div className="relative p-6 pt-2 z-[10001]">
             <button
+              type="button"
               onClick={handleAccept}
               disabled={!isChecked || isLoading}
               className={`w-full py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
-                isChecked 
-                  ? 'bg-brand-primary hover:bg-blue-600 text-white shadow-lg shadow-brand-primary/25' 
+                isChecked
+                  ? 'bg-brand-primary hover:bg-blue-600 text-white shadow-lg shadow-brand-primary/25 cursor-pointer'
                   : 'bg-gray-800 text-gray-500 cursor-not-allowed'
               }`}
             >
