@@ -21,7 +21,7 @@ export const LegalDisclaimerModal: React.FC = () => {
     setIsLoading(true);
     localStorage.setItem('hasAcceptedDisclaimer', 'true');
     setIsVisible(false);
-    window.location.href = '/';
+    // Modal naturally unmounts without a jarring full page reload
   };
 
   return (

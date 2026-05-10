@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { UploadCloud, FileAudio, Play, AlertTriangle, CheckCircle, Activity, Lock } from 'lucide-react';
 import { useGamificationStore } from '../store/gamificationStore';
+import { useToastStore } from '../store/toastStore';
 import AdModal from '../components/AdModal';
 import WaveSurfer from 'wavesurfer.js';
 import { AnalysisReportPDF } from '../components/AnalysisReportPDF';
@@ -50,7 +51,10 @@ const VoiceAnalysis = () => {
   };
 
   const handleAnalyze = async () => {
-    if (!file) return;
+    if (!file) {
+      useToastStore.getState().addToast('error', 'Please upload an audio file first.');
+      return;
+    }
     
     if (attempts <= 0) {
        setShowAdModal(true);
@@ -67,26 +71,28 @@ const VoiceAnalysis = () => {
     const demoTranscript = "I don't know what you're talking about. I was at home the entire night. Yes, I'm sure.";
     
     try {
-      import('../lib/ai').then(async ({ analyzeVoiceTruthfulness }) => {
-         const aiResults = await analyzeVoiceTruthfulness(demoTranscript);
-         wavesurfer.current?.pause();
-         if (aiResults) {
-            setResults(aiResults);
-         } else {
-            // Fallback mock
-            setResults({
-              truthfulness: 45,
-              stressLevel: 'High',
-              voicePitch: 'Slight elevation in fundamental frequency (F0) suggesting minor stress.',
-              emotions: { happy: 5, sad: 15, neutral: 40, angry: 40 },
-              summary: 'Deception indicators present. Voice pitch elevation and defensive language detected.'
-            });
-         }
-         setIsAnalyzing(false);
-      });
+      const { analyzeVoiceTruthfulness } = await import('../lib/ai');
+      const aiResults = await analyzeVoiceTruthfulness(demoTranscript);
+      wavesurfer.current?.pause();
+      if (aiResults) {
+        setResults(aiResults);
+        useToastStore.getState().addToast('success', 'Voice analysis completed successfully.');
+      } else {
+        throw new Error("No results returned from API.");
+      }
     } catch (e) {
       console.error(e);
       wavesurfer.current?.pause();
+      // Fallback mock
+      setResults({
+        truthfulness: 45,
+        stressLevel: 'High',
+        voicePitch: 'Slight elevation in fundamental frequency (F0) suggesting minor stress.',
+        emotions: { happy: 5, sad: 15, neutral: 40, angry: 40 },
+        summary: 'Deception indicators present. Voice pitch elevation and defensive language detected.'
+      });
+      useToastStore.getState().addToast('error', 'API connection failed. Showing fallback simulated analysis.');
+    } finally {
       setIsAnalyzing(false);
     }
   };

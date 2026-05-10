@@ -7,6 +7,7 @@ import LiveAnalysis from './pages/LiveAnalysis';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import { useEffect } from 'react';
 import { LegalDisclaimerModal } from './components/LegalDisclaimerModal';
+import { ToastContainer } from './components/Toast';
 
 // Temporary Mock Components for Home
 const Home = () => (
@@ -119,6 +120,7 @@ function App() {
 
   return (
     <Router>
+      <ToastContainer />
       <LegalDisclaimerModal />
       <Layout>
         <Routes>
