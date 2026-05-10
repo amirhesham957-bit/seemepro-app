@@ -7,7 +7,6 @@ import VideoAnalysis from './pages/VideoAnalysis';
 import LiveAnalysis from './pages/LiveAnalysis';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import HistoryPage from './pages/HistoryPage';
-import { useEffect } from 'react';
 import { LegalDisclaimerModal } from './components/LegalDisclaimerModal';
 import { ToastContainer } from './components/Toast';
 import { useGamificationStore } from './store/gamificationStore';

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Video, Activity, AlertCircle, ShieldAlert, Disc, Camera, Play, Lock, Mic, MicOff, Waveform, Settings, User, Briefcase, Star, Zap, CheckCircle2, Clock, TrendingUp } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { Video, Activity, AlertCircle, ShieldAlert, Disc, Camera, Play, Lock, Mic, MicOff, Settings, User, Briefcase, Star, Zap, CheckCircle2, Clock, TrendingUp } from 'lucide-react';
 import Webcam from 'react-webcam';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGamificationStore } from '../store/gamificationStore';
