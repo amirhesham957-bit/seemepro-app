@@ -19,25 +19,20 @@ interface EmotionMap {
 }
 
 interface ReportResults {
-  // Shared
   summary: string;
   strengths?: string[];
   areasToImprove?: string[];
   categoryScores?: CategoryScores;
-  // Voice
   truthfulness?: number;
   stressLevel?: string;
   emotions?: EmotionMap;
-  // Video
   face?: VideoFace;
   body?: VideoBody;
   inconsistencies?: string[];
-  // Live
   overallScore?: number;
   videoAnalysis?: { eyeContact: number; posture: number; facialExpressions: string };
   voiceAnalysis?: { confidence: number; pace: number; clarity: number; fillerWords: number };
   coachingTips?: string[];
-  // Toxic
   toxicity?: number;
   category?: string;
   redFlags?: string[];
@@ -142,7 +137,6 @@ const s = {
   list: { margin: 0, paddingLeft: '20px', fontSize: '13.5px', lineHeight: '1.7' },
 };
 
-/* ── Circular Score ─────────────────────────────────── */
 const CircularScore = ({ score, color }: { score: number; color: string }) => {
   const r = 34;
   const circ = 2 * Math.PI * r;
@@ -152,15 +146,13 @@ const CircularScore = ({ score, color }: { score: number; color: string }) => {
       <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
         <circle cx="44" cy="44" r={r} stroke="#f3f4f6" strokeWidth="8" fill="transparent" />
         <circle cx="44" cy="44" r={r} stroke={color} strokeWidth="8" fill="transparent"
-          strokeDasharray={circ} strokeDashoffset={offset}
-          strokeLinecap="round" />
+          strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" />
       </svg>
       <div style={{ position: 'relative', fontWeight: 800, fontSize: '20px', color: COLORS.text }}>{score}</div>
     </div>
   );
 };
 
-/* ── Bar Row ────────────────────────────────────────── */
 const BarRow = ({ label, value, color = COLORS.primary }: { label: string; value: number; color?: string }) => (
   <div style={{ marginBottom: '12px' }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '5px' }}>
@@ -175,11 +167,9 @@ const BarRow = ({ label, value, color = COLORS.primary }: { label: string; value
   </div>
 );
 
-/* ── Cinematic Seal ─────────────────────────────────── */
 const CinematicSeal = ({ type }: { type: string }) => {
   const reportDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const reportId = Math.random().toString(36).substring(2, 10).toUpperCase();
-
   return (
     <div style={{
       marginTop: '48px',
@@ -199,43 +189,31 @@ const CinematicSeal = ({ type }: { type: string }) => {
         <div><strong style={{ color: '#374151' }}>Engine:</strong> SeeMePro AI · Powered by Gemini</div>
       </div>
 
-      {/* Center: Seal */}
+      {/* Center: Cinematic Seal */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-        {/* Outer ring */}
         <div style={{ position: 'relative', width: '120px', height: '120px' }}>
-          {/* Gradient background ring */}
           <div style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: '50%',
+            position: 'absolute', inset: 0, borderRadius: '50%',
             background: 'linear-gradient(135deg, #1337ec 0%, #8b5cf6 50%, #00CC66 100%)',
             padding: '3px',
           }}>
             <div style={{
-              width: '100%',
-              height: '100%',
-              borderRadius: '50%',
-              background: '#fff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexDirection: 'column',
+              width: '100%', height: '100%', borderRadius: '50%', background: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column',
             }}>
-              {/* Inner logo text */}
-              <span style={{ fontSize: '18px', color: COLORS.primary, fontWeight: 900, letterSpacing: '-0.5px', lineHeight: 1 }}>See<span style={{ color: COLORS.ai }}>Me</span></span>
+              <span style={{ fontSize: '18px', color: COLORS.primary, fontWeight: 900, letterSpacing: '-0.5px', lineHeight: 1 }}>
+                See<span style={{ color: COLORS.ai }}>Me</span>
+              </span>
               <div style={{ width: '48px', height: '2px', background: 'linear-gradient(90deg, #1337ec, #8b5cf6)', margin: '5px 0' }} />
               <span style={{ fontSize: '10px', color: COLORS.ai, fontWeight: 800, letterSpacing: '4px' }}>PRO</span>
               <div style={{ width: '36px', height: '1.5px', backgroundColor: '#00CC66', margin: '5px 0 3px' }} />
               <span style={{ fontSize: '6px', color: COLORS.muted, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase' }}>AI Certified</span>
             </div>
           </div>
-          {/* Dashed outer border SVG */}
           <svg style={{ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0 }}>
             <circle cx="60" cy="60" r="57" stroke="#8b5cf6" strokeWidth="1" strokeDasharray="4 4" fill="none" opacity="0.4" />
           </svg>
         </div>
-
-        {/* Verified badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#ecfdf5', border: '1px solid #6ee7b7', borderRadius: '20px', padding: '4px 12px' }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
@@ -244,7 +222,7 @@ const CinematicSeal = ({ type }: { type: string }) => {
         </div>
       </div>
 
-      {/* Right: confidentiality notice */}
+      {/* Right: confidentiality */}
       <div style={{ fontSize: '10px', color: COLORS.muted, lineHeight: 1.9, textAlign: 'right', maxWidth: '220px' }}>
         <div style={{ fontWeight: 700, color: '#374151', marginBottom: '4px', fontSize: '11px' }}>CONFIDENTIAL</div>
         <div>This document is generated exclusively</div>
@@ -256,7 +234,6 @@ const CinematicSeal = ({ type }: { type: string }) => {
   );
 };
 
-/* ── Main Component ─────────────────────────────────── */
 export const AnalysisReportPDF: React.FC<ReportProps> = ({ type, results, id = 'pdf-report-content' }) => {
   if (!results) return null;
 
@@ -280,7 +257,7 @@ export const AnalysisReportPDF: React.FC<ReportProps> = ({ type, results, id = '
       {/* Watermark */}
       <div style={s.watermark}>SeeMePro</div>
 
-      {/* ── Header ── */}
+      {/* Header */}
       <div style={s.header}>
         <div>
           <h1 style={s.title}>SeeMePro</h1>
@@ -291,12 +268,7 @@ export const AnalysisReportPDF: React.FC<ReportProps> = ({ type, results, id = '
             <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }} />
             <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 700, letterSpacing: '1px' }}>AI VERIFIED</span>
           </div>
-          <div style={{
-            background: 'linear-gradient(135deg, #1337ec, #8b5cf6)',
-            borderRadius: '12px',
-            padding: '10px 18px',
-            display: 'inline-block',
-          }}>
+          <div style={{ background: 'linear-gradient(135deg, #1337ec, #8b5cf6)', borderRadius: '12px', padding: '10px 18px', display: 'inline-block' }}>
             <span style={{ fontSize: '22px', fontWeight: 900, color: '#fff' }}>{mainScore}%</span>
             <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.8)', letterSpacing: '1px', marginTop: '2px', textTransform: 'uppercase' }}>
               {type === 'live' ? 'Overall Score' : type === 'toxic' ? 'Toxicity Level' : 'Integrity Score'}
@@ -305,7 +277,7 @@ export const AnalysisReportPDF: React.FC<ReportProps> = ({ type, results, id = '
         </div>
       </div>
 
-      {/* ── Score Cards Row ── */}
+      {/* Score Cards */}
       <div style={{ display: 'flex', gap: '16px', marginBottom: '28px', position: 'relative', zIndex: 1 }}>
         <div style={s.scoreBox(mainScoreColor)}>
           <h3 style={{ margin: '0 0 14px 0', fontSize: '12px', color: COLORS.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>
@@ -354,7 +326,7 @@ export const AnalysisReportPDF: React.FC<ReportProps> = ({ type, results, id = '
         </div>
       </div>
 
-      {/* ── Summary ── */}
+      {/* Summary */}
       <div style={{ ...s.section('#fff'), border: `1px solid ${COLORS.border}`, marginBottom: '24px' }}>
         <h2 style={{ fontSize: '16px', color: COLORS.text, marginTop: 0, marginBottom: '10px', fontWeight: 700 }}>
           {type === 'toxic' ? '🔍 Relationship Assessment Summary' : '📊 Detailed Behavioral Summary'}
@@ -362,7 +334,7 @@ export const AnalysisReportPDF: React.FC<ReportProps> = ({ type, results, id = '
         <p style={{ fontSize: '13.5px', lineHeight: '1.85', color: '#4b5563', margin: 0 }}>{results.summary}</p>
       </div>
 
-      {/* ── Toxic: Red Flags ── */}
+      {/* Toxic Red Flags */}
       {type === 'toxic' && results.redFlags && results.redFlags.length > 0 && (
         <div style={{ ...s.section('#fff5f5'), border: '1px solid #fecaca', marginBottom: '24px' }}>
           <h3 style={s.sectionTitle('#dc2626')}>🚩 Red Flags Detected ({results.redFlags.length})</h3>
@@ -372,7 +344,7 @@ export const AnalysisReportPDF: React.FC<ReportProps> = ({ type, results, id = '
         </div>
       )}
 
-      {/* ── Strengths + Areas ── */}
+      {/* Strengths + Areas */}
       {(results.strengths?.length || results.areasToImprove?.length) && (
         <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', position: 'relative', zIndex: 1 }}>
           {results.strengths?.length && (
@@ -394,7 +366,7 @@ export const AnalysisReportPDF: React.FC<ReportProps> = ({ type, results, id = '
         </div>
       )}
 
-      {/* ── Category Scores ── */}
+      {/* Category Scores */}
       {results.categoryScores && Object.keys(results.categoryScores).length > 0 && (
         <div style={{ ...s.section('#f9fafb'), marginBottom: '24px', border: `1px solid ${COLORS.border}` }}>
           <h3 style={{ fontSize: '13px', color: '#374151', marginTop: 0, marginBottom: '16px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px' }}>
@@ -408,7 +380,7 @@ export const AnalysisReportPDF: React.FC<ReportProps> = ({ type, results, id = '
         </div>
       )}
 
-      {/* ── Video-specific: Face + Body ── */}
+      {/* Video: Face + Body */}
       {type === 'video' && (results.face || results.body) && (
         <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', position: 'relative', zIndex: 1 }}>
           {results.face && (
@@ -432,7 +404,7 @@ export const AnalysisReportPDF: React.FC<ReportProps> = ({ type, results, id = '
         </div>
       )}
 
-      {/* ── Inconsistencies ── */}
+      {/* Video: Inconsistencies */}
       {type === 'video' && results.inconsistencies && results.inconsistencies.length > 0 && (
         <div style={{ ...s.section('#fffbeb'), borderLeft: '4px solid #f59e0b', marginBottom: '24px' }}>
           <h3 style={s.sectionTitle('#b45309')}>⚡ Critical Inconsistencies Detected</h3>
@@ -442,7 +414,7 @@ export const AnalysisReportPDF: React.FC<ReportProps> = ({ type, results, id = '
         </div>
       )}
 
-      {/* ── Voice Emotions ── */}
+      {/* Voice: Emotions */}
       {type === 'voice' && results.emotions && (
         <div style={{ ...s.section('#f0f4ff'), marginBottom: '24px', border: `1px solid ${COLORS.border}` }}>
           <h3 style={s.sectionTitle(COLORS.primary)}>🎭 Emotion Breakdown</h3>
@@ -457,7 +429,7 @@ export const AnalysisReportPDF: React.FC<ReportProps> = ({ type, results, id = '
         </div>
       )}
 
-      {/* ── Live: Coaching Tips ── */}
+      {/* Live: Coaching Tips */}
       {type === 'live' && results.coachingTips && results.coachingTips.length > 0 && (
         <div style={{ ...s.section('#f0fdf4'), borderLeft: '4px solid #22c55e', marginBottom: '24px' }}>
           <h3 style={s.sectionTitle('#15803d')}>💡 Coaching Tips</h3>
@@ -467,7 +439,7 @@ export const AnalysisReportPDF: React.FC<ReportProps> = ({ type, results, id = '
         </div>
       )}
 
-      {/* ── Live: Facial Expression Note ── */}
+      {/* Live: Facial Expression Note */}
       {type === 'live' && results.videoAnalysis?.facialExpressions && (
         <div style={{ ...s.section('#fdf4ff'), marginBottom: '24px' }}>
           <h3 style={s.sectionTitle(COLORS.ai)}>😊 Facial Expression Analysis</h3>
@@ -475,7 +447,7 @@ export const AnalysisReportPDF: React.FC<ReportProps> = ({ type, results, id = '
         </div>
       )}
 
-      {/* ── Cinematic Seal ── */}
+      {/* Cinematic Seal */}
       <CinematicSeal type={type} />
     </div>
   );
