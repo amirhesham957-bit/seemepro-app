@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { HeartCrack, UploadCloud, FileAudio, Play, AlertTriangle, ShieldAlert, Share2 } from 'lucide-react';
+import { HeartCrack, UploadCloud, FileAudio, Play, AlertTriangle, ShieldAlert, Share2, Download } from 'lucide-react';
 import WaveSurfer from 'wavesurfer.js';
+import { AnalysisReportPDF } from '../components/AnalysisReportPDF';
+import { downloadReportAsPDF } from '../lib/pdfUtils';
 
 const ToxicMeter = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -226,9 +228,28 @@ const ToxicMeter = () => {
             </div>
           </div>
           
-          <div className="flex justify-center mt-8">
+          <div className="flex justify-center gap-4 mt-8">
              <button onClick={() => setResults(null)} className="glass-button px-6 py-2 text-sm">Analyze Another</button>
+             <button
+               onClick={() => downloadReportAsPDF('toxic-report', 'SeeMePro_ToxicMeter_Report')}
+               className="flex items-center space-x-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg hover:scale-105 transition-all text-sm"
+             >
+               <Download size={16} />
+               <span>Download PDF Report</span>
+             </button>
           </div>
+          {results && <AnalysisReportPDF
+            type="toxic"
+            results={{
+              summary: results.summary,
+              toxicity: results.toxicity,
+              category: results.category,
+              redFlags: results.redFlags,
+              gaslighting: results.gaslighting,
+              manipulation: results.manipulation,
+            }}
+            id="toxic-report"
+          />}
         </div>
       )}
     </div>

@@ -6,6 +6,7 @@ import { useToastStore } from '../store/toastStore';
 import AdModal from '../components/AdModal';
 import { analyzeVoiceTruthfulness } from '../lib/ai';
 import { downloadReportAsPDF } from '../lib/pdfUtils';
+import { AnalysisReportPDF } from '../components/AnalysisReportPDF';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -611,6 +612,7 @@ const VoiceAnalysis = () => {
       </AnimatePresence>
 
       <AdModal isOpen={showAdModal} onClose={() => setShowAdModal(false)} featureToUnlock="voice" />
+      {results && <AnalysisReportPDF type="voice" results={results} id="voice-report" />}
     </motion.div>
   );
 };

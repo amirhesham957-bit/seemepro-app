@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Activity, AlertCircle, ShieldAlert, Disc, Camera, Mic, CheckCircle2 } from 'lucide-react';
 import Webcam from 'react-webcam';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -204,7 +204,7 @@ const LiveAnalysis = () => {
           <button onClick={() => setResults(null)} className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium transition-all">New Session</button>
           <button onClick={() => downloadReportAsPDF('live-report', 'SeeMePro_Live_Interview')} className="px-6 py-3 rounded-xl bg-brand-ai text-white font-bold shadow-lg hover:scale-105 transition-all">Download PDF Report</button>
         </div>
-        <AnalysisReportPDF type="video" results={results} id="live-report" />
+        <AnalysisReportPDF type="live" results={results} id="live-report" />
       </motion.div>
     );
   }

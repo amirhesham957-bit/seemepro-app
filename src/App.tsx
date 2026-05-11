@@ -13,6 +13,7 @@ import { useGamificationStore } from './store/gamificationStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedBackground from './components/AnimatedBackground';
 import { PwaInstallButton } from './components/PwaInstallButton';
+import { AnalysisReportPDF } from './components/AnalysisReportPDF';
 
 // Home Component with Cinematic Animations
 const Home = () => (
@@ -193,6 +194,7 @@ const AnimatedRoutes = () => {
         <Route path="/live" element={<LiveAnalysis />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/test-pdf" element={<div style={{ position: 'static', backgroundColor: 'white', zIndex: 100 }}><AnalysisReportPDF type="video" results={{ summary: 'Test summary', strengths: ['Test strength'], areasToImprove: ['Test area'], categoryScores: { Category1: 90 }, face: { microExpressions: 'Test micro', eyeMovement: 'Test eye' }, body: { posture: 'Test posture', handMovements: 'Test hand' }, inconsistencies: ['Test inconsistency'] }} id="test-pdf-id" /></div>} />
       </Routes>
     </AnimatePresence>
   );
