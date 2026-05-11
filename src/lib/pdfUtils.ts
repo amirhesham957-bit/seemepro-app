@@ -15,7 +15,7 @@ export const downloadReportAsPDF = async (elementId: string, filename: string) =
   element.style.zIndex = '-9999';
 
   try {
-    const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#FCFCFD' });
+    const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#0a0c16' });
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'mm', 'a4');
     

@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { useGamificationStore } from '../store/gamificationStore';
 
 export const LegalDisclaimerModal: React.FC = () => {
   const [isChecked, setIsChecked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const acceptTerms = useGamificationStore((state) => state.acceptTerms);
 
   useEffect(() => {
-    const hasAccepted = localStorage.getItem('hasAcceptedDisclaimer');
+    const hasAccepted = sessionStorage.getItem('hasAcceptedDisclaimer');
     if (!hasAccepted) {
       setIsVisible(true);
     }
@@ -16,10 +18,11 @@ export const LegalDisclaimerModal: React.FC = () => {
 
   if (!isVisible) return null;
 
-  const handleAccept = () => {
+  const handleAccept = async () => {
     if (!isChecked) return;
     setIsLoading(true);
-    localStorage.setItem('hasAcceptedDisclaimer', 'true');
+    sessionStorage.setItem('hasAcceptedDisclaimer', 'true');
+    await acceptTerms();
     setIsVisible(false);
     // Modal naturally unmounts without a jarring full page reload
   };

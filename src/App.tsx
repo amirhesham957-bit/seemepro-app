@@ -12,6 +12,7 @@ import { ToastContainer } from './components/Toast';
 import { useGamificationStore } from './store/gamificationStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedBackground from './components/AnimatedBackground';
+import { PwaInstallButton } from './components/PwaInstallButton';
 
 // Home Component with Cinematic Animations
 const Home = () => (
@@ -159,6 +160,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             <p className="text-sm font-semibold hidden md:block">{coins} Coins</p>
             <button className="mt-2 text-xs bg-brand-primary hover:bg-blue-600 px-3 py-1.5 rounded-lg w-full transition-colors hidden md:block shadow-lg">Get Premium</button>
           </motion.div>
+
+          <PwaInstallButton />
 
           <Link to="/privacy" className="text-xs text-brand-secondary hover:text-white transition-colors text-center pb-2 hidden md:block">
             Privacy Policy
