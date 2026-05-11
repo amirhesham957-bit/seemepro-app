@@ -1,7 +1,18 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+const parseJSON = (text: string) => {
+  const clean = text.replace(/```(?:json)?\s*/g, '').replace(/```/g, '').trim();
+  try {
+    return JSON.parse(clean);
+  } catch {
+    const match = clean.match(/\{[\s\S]*\}/);
+    if (match) return JSON.parse(match[0]);
+    throw new Error('No valid JSON in response');
+  }
+};
 
 export const analyzeToxicVoiceNote = async (transcript: string) => {
   try {
@@ -16,11 +27,8 @@ Return ONLY a valid JSON object matching this exact structure:
   "summary": "Brief 2 sentence psychological summary"
 }
 Transcript: "${transcript}"`;
-
     const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
-    const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || [null, responseText];
-    return JSON.parse(jsonMatch[1] || jsonMatch[0]);
+    return parseJSON(result.response.text());
   } catch (error) {
     console.error("AI Analysis Failed:", error);
     throw new Error("Failed to analyze voice note.");
@@ -42,11 +50,8 @@ Return ONLY a valid JSON object matching this exact structure:
 }
 Ensure the emotion numbers add up to exactly 100.
 Transcript: "${transcript}"`;
-
     const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
-    const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || [null, responseText];
-    return JSON.parse(jsonMatch[1] || jsonMatch[0]);
+    return parseJSON(result.response.text());
   } catch (error) {
     console.error("AI Voice Analysis Failed:", error);
     throw new Error("Failed to analyze voice truthfulness.");
@@ -55,46 +60,29 @@ Transcript: "${transcript}"`;
 
 export const analyzeVideoTruthfulness = async (metadata: any, framesBase64?: string[]) => {
   try {
-    let prompt = `You are an expert body language and micro-expression analyst. I will provide you with JSON metadata extracted from a video session.
-Analyze the metadata and return ONLY a valid JSON object matching this exact structure:
+    let prompt = `You are an expert body language and micro-expression analyst. Analyze the metadata and return ONLY a valid JSON object:
 {
   "truthfulness": number (0-100),
-  "face": { 
-    "microExpressions": "string describing micro-expressions detected", 
-    "eyeMovement": "string describing eye movement patterns" 
-  },
-  "body": { 
-    "posture": "string describing body posture", 
-    "handMovements": "string describing hand movements/gestures" 
-  },
-  "inconsistencies": ["string detailing contradiction 1", "string detailing contradiction 2"],
-  "summary": "Detailed 3-5 paragraph behavioral summary of the subject.",
-  "strengths": ["good eye contact", "open posture"],
-  "areasToImprove": ["frequent touching of face", "closed off body language"],
+  "face": { "microExpressions": "string", "eyeMovement": "string" },
+  "body": { "posture": "string", "handMovements": "string" },
+  "inconsistencies": ["string 1", "string 2"],
+  "summary": "Detailed 3-5 paragraph behavioral summary.",
+  "strengths": ["strength 1"],
+  "areasToImprove": ["area 1"],
   "categoryScores": { "eyeContact": number (0-100), "posture": number (0-100), "confidence": number (0-100) }
 }
 Metadata: ${JSON.stringify(metadata)}`;
 
     const contents: any[] = [prompt];
-    
     if (framesBase64 && framesBase64.length > 0) {
-      prompt += `\nI have also attached ${framesBase64.length} image frames from the video. Please factor visual analysis of these frames into your assessment.`;
+      prompt += `\nAnalyze these ${framesBase64.length} video frames too.`;
       contents[0] = prompt;
-      
       framesBase64.forEach(base64 => {
-        contents.push({
-          inlineData: {
-            data: base64.replace(/^data:image\/[a-z]+;base64,/, ""),
-            mimeType: "image/jpeg"
-          }
-        });
+        contents.push({ inlineData: { data: base64.replace(/^data:image\/[a-z]+;base64,/, ""), mimeType: "image/jpeg" } });
       });
     }
-
     const result = await model.generateContent(contents);
-    const responseText = result.response.text();
-    const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || [null, responseText];
-    return JSON.parse(jsonMatch[1] || jsonMatch[0]);
+    return parseJSON(result.response.text());
   } catch (error) {
     console.error("AI Video Analysis Failed:", error);
     throw new Error("Failed to analyze video.");
@@ -103,34 +91,21 @@ Metadata: ${JSON.stringify(metadata)}`;
 
 export const analyzeLiveInterview = async (videoMetadata: any, voiceMetadata: any, transcript: string) => {
   try {
-    const prompt = `You are an expert interview coach and behavioral psychologist. I will provide you with video metadata, voice metadata, and a live transcript from an interview session. 
-Analyze all data streams and return ONLY a valid JSON object matching this exact structure:
+    const prompt = `You are an expert interview coach. Analyze all data and return ONLY a valid JSON object:
 {
   "overallScore": number (0-100),
-  "videoAnalysis": {
-     "eyeContact": number (0-100),
-     "posture": number (0-100),
-     "facialExpressions": "string describing facial expression consistency"
-  },
-  "voiceAnalysis": {
-     "confidence": number (0-100),
-     "pace": number (0-100),
-     "clarity": number (0-100),
-     "fillerWords": number (0-100)
-  },
-  "summary": "Detailed 3-5 paragraph analysis of the interview performance, combining both visual and vocal cues.",
+  "videoAnalysis": { "eyeContact": number (0-100), "posture": number (0-100), "facialExpressions": "string" },
+  "voiceAnalysis": { "confidence": number (0-100), "pace": number (0-100), "clarity": number (0-100), "fillerWords": number (0-100) },
+  "summary": "Detailed 3-5 paragraph analysis.",
   "strengths": ["strength 1", "strength 2"],
-  "areasToImprove": ["improvement 1", "improvement 2"],
+  "areasToImprove": ["area 1", "area 2"],
   "coachingTips": ["tip 1", "tip 2", "tip 3"]
 }
-Video Metadata: ${JSON.stringify(videoMetadata)}
-Voice Metadata: ${JSON.stringify(voiceMetadata)}
+Video: ${JSON.stringify(videoMetadata)}
+Voice: ${JSON.stringify(voiceMetadata)}
 Transcript: "${transcript}"`;
-
     const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
-    const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || [null, responseText];
-    return JSON.parse(jsonMatch[1] || jsonMatch[0]);
+    return parseJSON(result.response.text());
   } catch (error) {
     console.error("AI Live Interview Analysis Failed:", error);
     throw new Error("Failed to analyze live interview.");

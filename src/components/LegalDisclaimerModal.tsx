@@ -7,38 +7,46 @@ export const LegalDisclaimerModal: React.FC = () => {
   const [isChecked, setIsChecked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+
+  const termsAccepted = useGamificationStore((state) => state.termsAccepted);
+  const isInitialized = useGamificationStore((state) => state.isInitialized);
   const acceptTerms = useGamificationStore((state) => state.acceptTerms);
 
   useEffect(() => {
-    const hasAccepted = sessionStorage.getItem('hasAcceptedDisclaimer');
-    if (!hasAccepted) {
+    // Wait for store to initialize before deciding visibility
+    if (!isInitialized) return;
+
+    // Check both store state AND localStorage as backup
+    const localAccepted = localStorage.getItem('seemepro-terms-accepted') === 'true';
+
+    if (!termsAccepted && !localAccepted) {
       setIsVisible(true);
     }
-  }, []);
-
-  if (!isVisible) return null;
+  }, [isInitialized, termsAccepted]);
 
   const handleAccept = async () => {
     if (!isChecked) return;
     setIsLoading(true);
-    sessionStorage.setItem('hasAcceptedDisclaimer', 'true');
+    // Save to localStorage as backup
+    localStorage.setItem('seemepro-terms-accepted', 'true');
     await acceptTerms();
     setIsVisible(false);
-    // Modal naturally unmounts without a jarring full page reload
+    setIsLoading(false);
   };
+
+  if (!isVisible) return null;
 
   return (
     <AnimatePresence>
-      {/* Full-screen overlay — z-[9999] beats everything */}
       <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-        {/* Backdrop — pointer-events-none so it never blocks the button */}
+        {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="absolute inset-0 bg-black/80 backdrop-blur-md pointer-events-none"
         />
 
-        {/* Modal card — z-[10000] so it sits above the backdrop */}
+        {/* Modal */}
         <motion.div
           initial={{ scale: 0.95, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -89,7 +97,7 @@ export const LegalDisclaimerModal: React.FC = () => {
             </label>
           </div>
 
-          {/* Footer — explicit z-[10001] to be absolutely un-blockable */}
+          {/* Footer */}
           <div className="relative p-6 pt-2 z-[10001]">
             <button
               type="button"
